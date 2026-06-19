@@ -31,7 +31,10 @@ export async function runPreview({ prompt, mapFile, config, now }) {
   const { candidates } = matchPrompt(prompt, map, { topN: config.topN, scoreFloor: config.scoreFloor });
   const lines = [
     `[cc-autopilot] preview — ${candidates.length} aday (harita: ${map.capabilities.length}${stale ? `, ${ageDays}g eski` : ''})`,
-    ...candidates.map((c) => `  [score ${scoreCapability(promptTokens, c)}] ${c.id}  (${c.kind}·${c.trust}) — ${c.name}`)
+    ...candidates.flatMap((c) => {
+      const head = `  [score ${scoreCapability(promptTokens, c)}] ${c.id}  (${c.kind}·${c.trust}) — ${c.name}`;
+      return c.install?.command ? [head, `      kur: ${c.install.command}`] : [head];
+    })
   ];
   return { candidates, lines };
 }
@@ -50,7 +53,7 @@ async function main(argv) {
   console.log(lines.join('\n'));
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main(process.argv).catch((e) => {
     console.error(`Error: ${e.message}`);
     process.exitCode = 1;
