@@ -1,12 +1,12 @@
 ---
-description: Preview cc-autopilot router candidates for a prompt (read-only; installs nothing)
-allowed-tools: Bash(node *)
+description: Route a request through the cc-autopilot capability council and report a decision (read-only; installs nothing)
+allowed-tools: Bash(node *), Task, Write, Read
 ---
 
-# /route — capability preview
+# /route — capability council
 
-Read-only preview of which capabilities the cc-autopilot router would surface for the given prompt. Nothing is installed or decided.
+Use the **capability-router** skill to route the following request through the multi-agent council (Planner + Critic) and report a single decision (use_existing / install_then_use / no_capability_needed). The council decides only — it installs nothing.
 
-!`node "${CLAUDE_PLUGIN_ROOT}/lib/cli.js" preview "$ARGUMENTS"`
+Request: $ARGUMENTS
 
-The candidates above are ranked by lexical relevance (read-only). In a later version the router will decide and install autonomously.
+After the skill produces its final (validated) decision, present it to me: the decision, the chosen capabilities, the method, and the rationale. If the decision is `install_then_use`, show the install command(s) as text without running them.
