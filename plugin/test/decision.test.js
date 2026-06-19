@@ -81,3 +81,40 @@ test('normalizeDecision returns safe fallback for garbage input (no throw)', () 
   assert.equal(d.confidence, 0);
   assert.deepEqual(d.capabilities, []);
 });
+
+test('normalizeDecision downgrades install_then_use whose capabilities all filter out (I1)', () => {
+  const knownIds = new Set(['mp::p::skill::a']);
+  const d = normalizeDecision(
+    { decision: 'install_then_use', capabilities: ['mp::ghost::skill::x'], installs: ['mp::p::skill::a'], method: '', rationale: 'r', confidence: 0.9 },
+    { confidenceThreshold: 0.6, knownIds }
+  );
+  assert.equal(d.decision, 'no_capability_needed');
+});
+
+test('normalizeDecision treats confidence exactly at threshold as passing (boundary)', () => {
+  const d = normalizeDecision(
+    { decision: 'use_existing', capabilities: ['mp::p::skill::a'], installs: [], method: '', rationale: 'r', confidence: 0.6 },
+    { confidenceThreshold: 0.6 }
+  );
+  assert.equal(d.decision, 'use_existing');
+});
+
+test('normalizeDecision dedupes repeated ids', () => {
+  const d = normalizeDecision(
+    { decision: 'use_existing', capabilities: ['mp::p::skill::a', 'mp::p::skill::a'], installs: [], method: '', rationale: 'r', confidence: 0.9 },
+    { confidenceThreshold: 0.6 }
+  );
+  assert.deepEqual(d.capabilities, ['mp::p::skill::a']);
+});
+
+test('normalizeDecision passes ids through unchecked when knownIds is null (no map)', () => {
+  const d = normalizeDecision(
+    { decision: 'use_existing', capabilities: ['mp::anything::skill::x'], installs: [], method: '', rationale: 'r', confidence: 0.9 },
+    { confidenceThreshold: 0.6, knownIds: null }
+  );
+  assert.deepEqual(d.capabilities, ['mp::anything::skill::x']);
+});
+
+test('validateDecision flags a non-string method', () => {
+  assert.ok(validateDecision({ ...VALID, method: 42 }).some((e) => e.includes('method')));
+});
