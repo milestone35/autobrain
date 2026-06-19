@@ -7,8 +7,9 @@ Prereq: a built map at `mapSource` (`cd ../indexer && npm run scan`).
 
 ## Scenario A — capability genuinely helps -> use_existing
 Command: `/route audit my OpenAPI spec for security vulnerabilities`
-Expect: decision `use_existing` (or `install_then_use` if not present), capabilities include an
-API-security skill (e.g. an `api-security-testing` skill). Rationale references API security.
+Expect: decision `use_existing` (or `install_then_use` if not present), capabilities include a
+component id under the `api-security-testing` plugin
+(e.g. `claude-plugins-official::api-security-testing::skill::42crunch-audit`). Rationale references API security.
 
 ## Scenario B — trivial/irrelevant request -> no_capability_needed
 Command: `/route rename this local variable from x to count`

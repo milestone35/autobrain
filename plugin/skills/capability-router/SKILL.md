@@ -13,9 +13,9 @@ You orchestrate a small council to decide, autonomously, which capabilities (if 
 - `PLUGIN_ROOT`: the plugin directory (`${CLAUDE_PLUGIN_ROOT}` when run as an installed plugin; otherwise the `plugin/` dir of this repo).
 
 ## Step 1 — Gather candidates (deterministic)
-Run:
+Run the command below, **substituting the actual REQUEST text for the placeholder** (do not pass the literal word "REQUEST"); keep the quotes:
 ```bash
-node "$PLUGIN_ROOT/lib/cli.js" candidates "REQUEST"
+node "$PLUGIN_ROOT/lib/cli.js" candidates "<REQUEST text here>"
 ```
 Parse the JSON. If `candidates` is empty (or an `error` is present), STOP and report decision `no_capability_needed` (nothing to route to). Do not run the council.
 
@@ -38,7 +38,7 @@ The Critic asks: is a special capability genuinely needed, or does default behav
 - Never exceed 2 Planner rounds. When in doubt or confidence is low, prefer `no_capability_needed`.
 
 ## Step 5 — Synthesize the decision object
-Build ONE object (use the lower of Planner/Critic confidence when they disagree):
+Build ONE object. Use the lower of Planner/Critic confidence when they disagree. If the Critic's verdict was `revise`/`reject`, fold its `suggested.capabilities`/`suggested.installs` into the set (after the round-2 Planner pass); if `accept`, keep the Planner's set. (The deterministic `decide` step re-checks every id against the map regardless.)
 ```json
 { "decision": "use_existing | install_then_use | no_capability_needed",
   "capabilities": ["id"...], "installs": ["id"...],
@@ -54,7 +54,7 @@ Run:
 ```bash
 node "$PLUGIN_ROOT/lib/cli.js" decide "$PLUGIN_ROOT/.decision.tmp.json"
 ```
-This normalizes the decision: it enforces the confidence threshold (low confidence -> `no_capability_needed`), strips ids not in the map, and clears nonsensical install lists. Treat the CLI's normalized output as the FINAL decision (it overrides your synthesis).
+This normalizes the decision: it enforces the confidence threshold (low confidence -> `no_capability_needed`), strips ids not in the map, and clears nonsensical install lists. The **last line** of the command's output is the canonical decision JSON — parse that and treat it as the FINAL decision (it overrides your synthesis); the lines above it are just a human-readable summary.
 
 ## Step 7 — Present
 Report the final decision to the user: the `decision`, chosen `capabilities`, `method`, and `rationale`. If `install_then_use`, show the install command(s) for each id (from the candidate JSON's `install` field) as text — DO NOT run them; autonomous installation arrives in a later version. Clean up the scratch file.
