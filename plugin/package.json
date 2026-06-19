@@ -1,0 +1,11 @@
+{
+  "name": "cc-autopilot-router",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node --test",
+    "preview": "node lib/cli.js preview"
+  }
+}

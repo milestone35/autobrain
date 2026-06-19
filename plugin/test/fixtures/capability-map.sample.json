@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-19T00:00:00Z",
+  "sources": { "official": { "ok": true, "count": 3 } },
+  "capabilities": [
+    {
+      "id": "mp::api-sec::skill::api-audit",
+      "kind": "skill", "name": "api-audit",
+      "description": "Audit API security and find vulnerabilities",
+      "keywords": ["api", "audit", "security", "vulnerabilities"],
+      "source": { "marketplace": "mp", "repo": null, "discoveredVia": "official" },
+      "install": { "method": "plugin", "command": "claude plugin install api-sec@mp", "package": null },
+      "trust": "trusted", "cost": { "always_on": 100, "on_invoke": 2000 },
+      "popularity": { "unique_installs": 50, "stars": null }, "lastSeen": "2026-06-19T00:00:00Z"
+    },
+    {
+      "id": "mp::api-sec::skill::api-fuzz",
+      "kind": "skill", "name": "api-fuzz",
+      "description": "Fuzz API endpoints",
+      "keywords": ["api", "fuzz", "endpoints"],
+      "source": { "marketplace": "mp", "repo": null, "discoveredVia": "official" },
+      "install": { "method": "plugin", "command": "claude plugin install api-sec@mp", "package": null },
+      "trust": "trusted", "cost": null,
+      "popularity": { "unique_installs": 200, "stars": null }, "lastSeen": "2026-06-19T00:00:00Z"
+    },
+    {
+      "id": "mp::docs::skill::write-readme",
+      "kind": "skill", "name": "write-readme",
+      "description": "Generate documentation and README files",
+      "keywords": ["documentation", "readme", "docs"],
+      "source": { "marketplace": "mp", "repo": null, "discoveredVia": "official" },
+      "install": { "method": "plugin", "command": "claude plugin install docs@mp", "package": null },
+      "trust": "trusted", "cost": null,
+      "popularity": { "unique_installs": 10, "stars": null }, "lastSeen": "2026-06-19T00:00:00Z"
+    }
+  ]
+}
