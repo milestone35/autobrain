@@ -39,6 +39,19 @@ export async function runPreview({ prompt, mapFile, config, now }) {
   return { candidates, lines };
 }
 
+export async function runCandidates({ prompt, mapFile, config, now }) {
+  const { map, error } = await loadMap({ mapFile, staleDays: config.staleDays, now });
+  if (error || !map) return { candidates: [], error: error || 'harita yok' };
+  const promptTokens = tokenize(prompt);
+  const { candidates } = matchPrompt(prompt, map, { topN: config.topN, scoreFloor: config.scoreFloor });
+  return {
+    candidates: candidates.map((c) => ({
+      id: c.id, kind: c.kind, name: c.name, trust: c.trust,
+      install: c.install?.command ?? null, score: scoreCapability(promptTokens, c)
+    }))
+  };
+}
+
 async function main(argv) {
   const cmd = argv[2];
   if (cmd !== 'preview') {
