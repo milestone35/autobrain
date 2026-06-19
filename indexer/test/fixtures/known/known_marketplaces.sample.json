@@ -1,0 +1,10 @@
+{
+  "mp-a": {
+    "source": { "source": "github", "repo": "owner/mp-a" },
+    "installLocation": "INSTALL_A"
+  },
+  "mp-missing": {
+    "source": { "source": "github", "repo": "owner/mp-missing" },
+    "installLocation": "/no/such/dir"
+  }
+}

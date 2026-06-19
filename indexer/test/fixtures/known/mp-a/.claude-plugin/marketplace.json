@@ -1,0 +1,7 @@
+{
+  "name": "mp-a",
+  "plugins": [
+    { "name": "alpha", "description": "Alpha helper plugin" },
+    { "name": "beta", "description": "Beta tooling" }
+  ]
+}
