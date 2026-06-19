@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "catalog": {
+    "plugins": {
+      "api-security-testing@claude-plugins-official": {
+        "plugin": "api-security-testing",
+        "tokens": { "claude-opus-4-7": { "always_on": 979, "on_invoke": 16250 } },
+        "components": {
+          "commands": [],
+          "agents": [],
+          "skills": [
+            { "name": "42crunch-scan", "chars": { "always_on": 601, "on_invoke": 6836 } },
+            { "name": "42crunch-audit", "chars": { "always_on": 523, "on_invoke": 3532 } }
+          ],
+          "hooks": [],
+          "mcpServers": [{ "name": "crunch-mcp" }]
+        },
+        "unique_installs": 441,
+        "marketplace_entry": {
+          "name": "42crunch-api-security-testing",
+          "description": "Automate API security in Claude Code.",
+          "author": { "name": "42Crunch" },
+          "category": "security"
+        }
+      },
+      "empty-plugin@claude-plugins-official": {
+        "plugin": "empty-plugin",
+        "components": { "skills": [], "agents": [], "mcpServers": [], "commands": [] },
+        "unique_installs": 3,
+        "marketplace_entry": { "name": "Empty", "description": "Nothing here", "category": "misc" }
+      }
+    }
+  }
+}
