@@ -3,5 +3,6 @@
   "mapSource": "../indexer/data/capability-map.json",
   "topN": 5,
   "scoreFloor": 0,
-  "staleDays": 14
+  "staleDays": 14,
+  "confidenceThreshold": 0.6
 }

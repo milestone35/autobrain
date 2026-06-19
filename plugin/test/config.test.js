@@ -27,3 +27,17 @@ test('loadConfig accepts scoreFloor 0 and positive topN', () => {
   assert.equal(c.scoreFloor, 0);
   assert.equal(c.topN, 1);
 });
+
+test('loadConfig defaults confidenceThreshold to 0.6', () => {
+  assert.equal(loadConfig().confidenceThreshold, 0.6);
+  assert.equal(DEFAULTS.confidenceThreshold, 0.6);
+});
+
+test('loadConfig accepts valid confidenceThreshold and rejects out-of-range/non-number', () => {
+  assert.equal(loadConfig({ confidenceThreshold: 0.8 }).confidenceThreshold, 0.8);
+  assert.equal(loadConfig({ confidenceThreshold: 0 }).confidenceThreshold, 0);
+  assert.equal(loadConfig({ confidenceThreshold: 1 }).confidenceThreshold, 1);
+  assert.equal(loadConfig({ confidenceThreshold: 1.5 }).confidenceThreshold, DEFAULTS.confidenceThreshold);
+  assert.equal(loadConfig({ confidenceThreshold: -0.1 }).confidenceThreshold, DEFAULTS.confidenceThreshold);
+  assert.equal(loadConfig({ confidenceThreshold: 'high' }).confidenceThreshold, DEFAULTS.confidenceThreshold);
+});
