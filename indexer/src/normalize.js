@@ -15,3 +15,38 @@ export function deriveKeywords(text, limit = 25) {
     .filter((w) => w.length >= 3 && !STOPWORDS.has(w));
   return [...new Set(words)].sort().slice(0, limit);
 }
+
+const KINDS = new Set(['skill', 'agent', 'mcp', 'command', 'plugin']);
+
+export function validateCapability(input = {}) {
+  const errs = [];
+  if (!KINDS.has(input.kind)) errs.push(`kind must be one of ${[...KINDS].join('|')}`);
+  if (!input.name || typeof input.name !== 'string') errs.push('name is required');
+  if (!input.marketplace) errs.push('marketplace is required');
+  if (!input.plugin) errs.push('plugin is required');
+  return errs;
+}
+
+export function makeCapability(input) {
+  const errs = validateCapability(input);
+  if (errs.length) throw new Error(`Invalid capability (${input?.name || '?'}): ${errs.join('; ')}`);
+  return {
+    id: makeId({ marketplace: input.marketplace, plugin: input.plugin, component: input.component }),
+    kind: input.kind,
+    name: input.name,
+    description: input.description || '',
+    keywords: Array.isArray(input.keywords) ? input.keywords : [],
+    source: {
+      marketplace: input.marketplace,
+      repo: input.source?.repo ?? null,
+      discoveredVia: input.source?.discoveredVia || 'unknown'
+    },
+    install: input.install
+      ? { method: input.install.method, command: input.install.command, package: input.install.package ?? null }
+      : null,
+    trust: null,
+    cost: input.cost ?? null,
+    popularity: input.popularity ?? {},
+    lastSeen: input.now || ''
+  };
+}
