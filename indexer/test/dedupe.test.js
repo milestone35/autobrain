@@ -31,3 +31,12 @@ test('distinct ids are kept and output is sorted by id', () => {
   const out = dedupeCapabilities([cap({ id: 'z' }), cap({ id: 'a' })]);
   assert.deepEqual(out.map((c) => c.id), ['a', 'z']);
 });
+
+test('description tie-break is order-independent for equal-length descriptions', () => {
+  const a = cap({ description: 'aaa' });
+  const b = cap({ description: 'bbb' });
+  const [ab] = dedupeCapabilities([a, b]);
+  const [ba] = dedupeCapabilities([b, a]);
+  assert.equal(ab.description, ba.description);
+  assert.equal(ab.description, 'aaa'); // lexically smaller wins, deterministically
+});

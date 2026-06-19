@@ -20,7 +20,7 @@ export async function collect(ctx) {
       const me = entry.marketplace_entry || {};
       const keywords = deriveKeywords([me.name, me.description, me.category].filter(Boolean).join(' '));
       const command = `claude plugin install ${plugin}@${marketplace}`;
-      const popularity = { unique_installs: entry.unique_installs ?? undefined };
+      const popularity = { unique_installs: entry.unique_installs ?? null };
       let added = 0;
 
       for (const [field, kind] of Object.entries(COMPONENT_KINDS)) {
