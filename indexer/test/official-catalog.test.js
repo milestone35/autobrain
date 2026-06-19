@@ -17,7 +17,7 @@ test('collect emits one capability per component', async () => {
   // 2 skills + 1 mcp + 1 plugin-level (empty-plugin) = 4
   assert.equal(res.capabilities.length, 4);
 
-  const scan = res.capabilities.find((c) => c.id === 'claude-plugins-official::api-security-testing::42crunch-scan');
+  const scan = res.capabilities.find((c) => c.id === 'claude-plugins-official::api-security-testing::skill::42crunch-scan');
   assert.equal(scan.kind, 'skill');
   assert.equal(scan.install.command, 'claude plugin install api-security-testing@claude-plugins-official');
   assert.equal(scan.source.discoveredVia, 'official');
@@ -27,9 +27,9 @@ test('collect emits one capability per component', async () => {
   assert.equal(scan.lastSeen, NOW);
 
   const mcp = res.capabilities.find((c) => c.kind === 'mcp');
-  assert.equal(mcp.id, 'claude-plugins-official::api-security-testing::crunch-mcp');
+  assert.equal(mcp.id, 'claude-plugins-official::api-security-testing::mcp::crunch-mcp');
 
-  const empty = res.capabilities.find((c) => c.id === 'claude-plugins-official::empty-plugin');
+  const empty = res.capabilities.find((c) => c.id === 'claude-plugins-official::empty-plugin::plugin');
   assert.equal(empty.kind, 'plugin');
 });
 

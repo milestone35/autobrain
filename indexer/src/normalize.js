@@ -3,8 +3,8 @@ const STOPWORDS = new Set([
   'are', 'was', 'use', 'using', 'via', 'can', 'all', 'any', 'not', 'but'
 ]);
 
-export function makeId({ marketplace, plugin, component } = {}) {
-  return [marketplace, plugin, component].filter(Boolean).join('::');
+export function makeId({ marketplace, plugin, kind, component } = {}) {
+  return [marketplace, plugin, kind, component].filter(Boolean).join('::');
 }
 
 export function deriveKeywords(text, limit = 25) {
@@ -27,11 +27,15 @@ export function validateCapability(input = {}) {
   return errs;
 }
 
+function normalizePopularity(p = {}) {
+  return { unique_installs: p?.unique_installs ?? null, stars: p?.stars ?? null };
+}
+
 export function makeCapability(input) {
   const errs = validateCapability(input);
   if (errs.length) throw new Error(`Invalid capability (${input?.name || '?'}): ${errs.join('; ')}`);
   return {
-    id: makeId({ marketplace: input.marketplace, plugin: input.plugin, component: input.component }),
+    id: makeId({ marketplace: input.marketplace, plugin: input.plugin, kind: input.kind, component: input.component }),
     kind: input.kind,
     name: input.name,
     description: input.description || '',
@@ -46,7 +50,7 @@ export function makeCapability(input) {
       : null,
     trust: null,
     cost: input.cost ?? null,
-    popularity: input.popularity ?? {},
+    popularity: normalizePopularity(input.popularity),
     lastSeen: input.now || ''
   };
 }

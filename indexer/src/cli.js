@@ -2,7 +2,7 @@ import { sources } from './sources/index.js';
 import { dedupeCapabilities } from './dedupe.js';
 import { loadTrustedSet, applyTrust } from './trust.js';
 import {
-  resolvePaths, readJson, writeMap, readMap, readScanState, writeScanState
+  resolvePaths, readJson, writeMap, readMap, writeScanState
 } from './store.js';
 import { pathToFileURL } from 'node:url';
 
@@ -11,7 +11,6 @@ export async function runScan(opts = {}) {
   const now = opts.now || new Date().toISOString();
   const log = opts.log || (() => {});
   const trustedSet = loadTrustedSet(await readJson(paths.trustedSources, { sources: [] }));
-  await readScanState(paths.stateFile); // surfaces corrupt-state recovery; result unused this plan
 
   const allCaps = [];
   const sourceSummary = {};
@@ -62,8 +61,16 @@ function formatStatus(s) {
 async function main(argv) {
   const cmd = argv[2];
   const flags = {};
-  for (let i = 3; i < argv.length - 1; i += 2) {
-    if (argv[i].startsWith('--')) flags[argv[i].slice(2)] = argv[i + 1];
+  for (let i = 3; i < argv.length; i += 2) {
+    const key = argv[i];
+    if (!key.startsWith('--')) continue;
+    const val = argv[i + 1];
+    if (val === undefined) {
+      console.error(`Missing value for ${key}`);
+      process.exitCode = 1;
+      return;
+    }
+    flags[key.slice(2)] = val;
   }
   if (flags.data) flags.dataDir = flags.data;
   if (cmd === 'scan') {

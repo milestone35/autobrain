@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { readJson } from '../store.js';
 import { makeCapability, deriveKeywords } from '../normalize.js';
+import { normalizeRepo } from '../trust.js';
 
 export const name = 'known';
 
@@ -25,7 +26,7 @@ export async function collect(ctx) {
   const capabilities = [];
   for (const [mpName, mp] of Object.entries(known)) {
     try {
-      const repo = mp.source?.repo ? `github:${mp.source.repo}` : null;
+      const repo = normalizeRepo(mp.source?.repo);
       const manifest = await readManifest(mp.installLocation);
       if (!manifest) {
         log(`known: no manifest for ${mpName}, skipping`);

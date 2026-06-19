@@ -29,7 +29,7 @@ test('collect emits plugin-level capabilities from marketplace manifest', async 
   assert.equal(res.ok, true);
   assert.equal(res.capabilities.length, 2); // alpha + beta; mp-missing skipped
 
-  const alpha = res.capabilities.find((c) => c.id === 'mp-a::alpha');
+  const alpha = res.capabilities.find((c) => c.id === 'mp-a::alpha::plugin');
   assert.equal(alpha.kind, 'plugin');
   assert.equal(alpha.install.command, 'claude plugin install alpha@mp-a');
   assert.equal(alpha.source.repo, 'github:owner/mp-a');

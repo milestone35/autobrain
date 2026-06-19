@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { makeId, deriveKeywords } from '../src/normalize.js';
 
 test('makeId joins present parts with ::', () => {
-  assert.equal(makeId({ marketplace: 'mp', plugin: 'p', component: 'c' }), 'mp::p::c');
+  assert.equal(makeId({ marketplace: 'mp', plugin: 'p', kind: 'skill', component: 'c' }), 'mp::p::skill::c');
 });
 
-test('makeId omits missing component', () => {
-  assert.equal(makeId({ marketplace: 'mp', plugin: 'p' }), 'mp::p');
+test('makeId omits missing parts', () => {
+  assert.equal(makeId({ marketplace: 'mp', plugin: 'p', kind: 'plugin' }), 'mp::p::plugin');
 });
 
 test('deriveKeywords lowercases, drops short words and stopwords, dedupes', () => {
@@ -44,7 +44,7 @@ test('validateCapability flags missing required fields', () => {
 
 test('makeCapability builds a normalized object', () => {
   const c = makeCapability(VALID);
-  assert.equal(c.id, 'mp::p::audit');
+  assert.equal(c.id, 'mp::p::skill::audit');
   assert.equal(c.kind, 'skill');
   assert.equal(c.trust, null);
   assert.equal(c.source.discoveredVia, 'official');
@@ -54,4 +54,13 @@ test('makeCapability builds a normalized object', () => {
 
 test('makeCapability throws on invalid input', () => {
   assert.throws(() => makeCapability({ kind: 'skill', name: '', plugin: 'p' }), /Invalid capability/);
+});
+
+test('makeCapability: same name, different kind => distinct ids (no collision)', () => {
+  const base = { name: 'dup', marketplace: 'mp', plugin: 'p', component: 'dup', now: 't' };
+  const skill = makeCapability({ ...base, kind: 'skill' });
+  const command = makeCapability({ ...base, kind: 'command' });
+  assert.notEqual(skill.id, command.id);
+  assert.equal(skill.id, 'mp::p::skill::dup');
+  assert.equal(command.id, 'mp::p::command::dup');
 });
