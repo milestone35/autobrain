@@ -1,3 +1,6 @@
+// Intentional copy of indexer/src/normalize.js's stopwords + tokenization.
+// The plugin knows the indexer ONLY via the capability-map.json contract, so we
+// duplicate rather than import. Keep this list in sync with the indexer if it changes.
 const STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'your', 'you',
   'are', 'was', 'use', 'using', 'via', 'can', 'all', 'any', 'not', 'but'
@@ -21,7 +24,7 @@ function countMatches(promptTokens, candidateTokens) {
 
 export function scoreCapability(promptTokens, cap) {
   const nameHits = countMatches(promptTokens, tokenize(cap.name));
-  const kwHits = countMatches(promptTokens, (cap.keywords || []).map((k) => k.toLowerCase()));
+  const kwHits = countMatches(promptTokens, (cap.keywords || []).flatMap(tokenize));
   const descHits = countMatches(promptTokens, tokenize(cap.description));
   return nameHits * 3 + kwHits * 2 + descHits * 1;
 }

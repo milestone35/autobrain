@@ -56,3 +56,11 @@ test('matchPrompt returns [] when nothing matches', () => {
   const { candidates } = matchPrompt('xyzzy nothing here', MAP, { topN: 5, scoreFloor: 0 });
   assert.deepEqual(candidates, []);
 });
+
+test('scoreCapability tokenizes multi-word keywords (contract robustness)', () => {
+  // The capability-map contract permits arbitrary keyword strings, not just single
+  // tokens. A multi-word keyword must still match a single prompt token.
+  const cap = { name: '', description: '', keywords: ['api security'] };
+  assert.equal(scoreCapability(tokenize('api'), cap), 2);       // 1 keyword token * 2
+  assert.equal(scoreCapability(tokenize('security'), cap), 2);
+});

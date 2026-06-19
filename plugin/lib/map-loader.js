@@ -26,7 +26,9 @@ export async function loadMap({ mapFile, staleDays = 14, now } = {}) {
 
   const nowMs = Date.parse(now || new Date().toISOString());
   const genMs = Date.parse(map.generatedAt);
-  const ageDays = Number.isFinite(genMs) ? Math.floor((nowMs - genMs) / DAY_MS) : null;
+  const ageDays = Number.isFinite(genMs) && Number.isFinite(nowMs)
+    ? Math.floor((nowMs - genMs) / DAY_MS)
+    : null;
   const stale = ageDays !== null && ageDays > staleDays;
 
   return { map, error: null, stale, ageDays };

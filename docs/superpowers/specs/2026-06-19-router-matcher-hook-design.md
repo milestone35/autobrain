@@ -255,5 +255,10 @@ komutu + testler + README.
   İlk sürümde ölçüp gerekiyorsa ayarlanacak.
 - **Ters indeks (Yaklaşım 3)** — harita çok büyürse (ör. web-keşif sonrası 10k+) skorlama maliyeti
   ölçülüp değerlendirilecek.
+- **`matchPrompt` 300ms zaman bütçesi — bilinçli olarak ERTELENDİ.** §5'te defansif tavan olarak
+  anılmıştı; implementasyonda uygulanmadı çünkü (a) 1029-cap lineer tarama <50ms (ölçüldü), bu
+  ölçekte YAGNI; (b) saf/deterministik matcher'a timer eklemek determinizmi ve test edilebilirliği
+  bozar. Gerekirse zaman koruması, non-determinizmin zaten yaşadığı **hook katmanında** (saf
+  matcher'da değil) eklenecek. Harita devasa büyürse ters indeksle birlikte yeniden değerlendirilir.
 - **`/route` ↔ konsey** — SP3'te bu komutun konseyi tetikleyecek şekilde yükseltilmesi; arayüz
   (`runPreview`) korunarak.
