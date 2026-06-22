@@ -15,9 +15,10 @@ npm test                                           # run the test suite
 node lib/cli.js preview "audit my api security"    # read-only matcher preview (human-readable)
 node lib/cli.js candidates "audit my api security" # machine-readable candidates (council input)
 node lib/cli.js decide path/to/decision.json       # validate/normalize a council decision
+node lib/cli.js install path/to/decision.json      # install a council decision (trusted=silent; --approved for untrusted)
 ```
 In Claude Code (plugin installed):
-- `/route <request>` — run the multi-agent capability council and get a decision (decides only; installs nothing).
+- `/route <request>` — run the multi-agent capability council, decide, and install (trusted silently; untrusted with one approval).
 
 ## How it works
 - `hooks/user-prompt-submit.js` — reads the prompt from stdin, loads the map,
@@ -33,6 +34,8 @@ In Claude Code (plugin installed):
   subagents (≤2 rounds), synthesizes a decision, and validates it via `lib/cli.js decide`.
 - `lib/decision.js` — deterministic decision validation/normalization: confidence-threshold
   fallback to `no_capability_needed`, and rejection of capability ids not present in the map.
+- `lib/installer.js` — `planInstalls` (trust → install mode) + `executeInstalls` (dependency-injected
+  run/verify/approve). Trusted installs run silently; candidate/unknown require `--approved`.
 
 ## Config (`config/autopilot.config.json`)
 - `enabled` — master switch (false = router silent)
@@ -42,6 +45,8 @@ In Claude Code (plugin installed):
 - `staleDays` — age after which a "run scan" note is appended (default 14)
 - `confidenceThreshold` — minimum council confidence; below it the decision falls back to
   `no_capability_needed` (default 0.6)
+- `autoInstall` — when true (default), trusted capabilities install silently; when false, the
+  install command is shown but not run
 
 ## Notes / caveats
 - The hook command uses `node`; the CC runtime must be able to resolve `node` on
