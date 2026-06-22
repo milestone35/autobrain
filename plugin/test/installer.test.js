@@ -37,3 +37,83 @@ test('planInstalls returns [] for empty/missing installs', () => {
   assert.deepEqual(planInstalls({ installs: [] }, mapWith([]), { autoInstall: true }), []);
   assert.deepEqual(planInstalls({}, mapWith([]), { autoInstall: true }), []);
 });
+
+import { executeInstalls } from '../lib/installer.js';
+
+// Stateful fake: run() marks a command installed; isInstalled/verify read that state.
+function fakeEnv({ approveAll = false, verifyAfterRun = true, preInstalled = [] } = {}) {
+  const installed = new Set(preInstalled);            // by command
+  const calls = { run: [], approve: [] };
+  return {
+    calls,
+    env: {
+      run: async (command) => { calls.run.push(command); if (verifyAfterRun) installed.add(command); },
+      isInstalled: async (item) => installed.has(item.command),
+      verify: async (item) => installed.has(item.command),
+      approve: async (item) => { calls.approve.push(item.id); return approveAll; },
+      log: () => {}
+    }
+  };
+}
+const item = (id, mode) => ({ id, command: `cmd:${id}`, trust: mode === 'approval' ? 'candidate' : 'trusted', mode });
+
+test('executeInstalls runs an auto item and verifies it installed', async () => {
+  const { env, calls } = fakeEnv();
+  const res = await executeInstalls([item('a', 'auto')], env);
+  assert.deepEqual(res, [{ id: 'a', status: 'installed' }]);
+  assert.deepEqual(calls.run, ['cmd:a']);
+});
+
+test('executeInstalls reports failed when post-run verify is false', async () => {
+  const { env, calls } = fakeEnv({ verifyAfterRun: false });
+  const res = await executeInstalls([item('a', 'auto')], env);
+  assert.equal(res[0].status, 'failed');
+  assert.deepEqual(calls.run, ['cmd:a']);          // it tried
+});
+
+test('executeInstalls does NOT run an approval item without approval', async () => {
+  const { env, calls } = fakeEnv({ approveAll: false });
+  const res = await executeInstalls([item('b', 'approval')], env);
+  assert.equal(res[0].status, 'needs-approval');
+  assert.deepEqual(calls.run, []);                 // never ran
+  assert.deepEqual(calls.approve, ['b']);
+});
+
+test('executeInstalls runs an approval item once approved', async () => {
+  const { env, calls } = fakeEnv({ approveAll: true });
+  const res = await executeInstalls([item('b', 'approval')], env);
+  assert.equal(res[0].status, 'installed');
+  assert.deepEqual(calls.run, ['cmd:b']);
+});
+
+test('executeInstalls skips an already-installed item without running', async () => {
+  const { env, calls } = fakeEnv({ preInstalled: ['cmd:a'] });
+  const res = await executeInstalls([item('a', 'auto')], env);
+  assert.equal(res[0].status, 'already-installed');
+  assert.deepEqual(calls.run, []);
+});
+
+test('executeInstalls reports skip-mode items without running', async () => {
+  const { env, calls } = fakeEnv();
+  const res = await executeInstalls([item('a', 'skip')], env);
+  assert.equal(res[0].status, 'skipped');
+  assert.equal(res[0].command, 'cmd:a');
+  assert.deepEqual(calls.run, []);
+});
+
+test('executeInstalls catches a throwing run and continues to the next item', async () => {
+  const installed = new Set();
+  const runCalls = [];
+  const env = {
+    run: async (command) => { runCalls.push(command); if (command === 'cmd:a') throw new Error('boom'); installed.add(command); },
+    isInstalled: async () => false,
+    verify: async (it) => installed.has(it.command),
+    approve: async () => true,
+    log: () => {}
+  };
+  const res = await executeInstalls([item('a', 'auto'), item('c', 'auto')], env);
+  assert.equal(res[0].status, 'failed');
+  assert.match(res[0].error, /boom/);
+  assert.equal(res[1].status, 'installed');        // continued
+  assert.deepEqual(runCalls, ['cmd:a', 'cmd:c']);
+});

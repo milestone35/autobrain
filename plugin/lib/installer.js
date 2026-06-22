@@ -14,3 +14,32 @@ export function planInstalls(decision, map, { autoInstall = true } = {}) {
   }
   return plan;
 }
+
+export async function executeInstalls(plan, { run, isInstalled, verify, approve, log = () => {} } = {}) {
+  const results = [];
+  for (const item of plan) {
+    try {
+      if (await isInstalled(item)) {
+        results.push({ id: item.id, status: 'already-installed' });
+        continue;
+      }
+      if (item.mode === 'skip') {
+        results.push({ id: item.id, status: 'skipped', command: item.command });
+        continue;
+      }
+      if (item.mode === 'approval' && !(await approve(item))) {
+        results.push({ id: item.id, status: 'needs-approval', command: item.command });
+        continue;
+      }
+      await run(item.command);                       // 'auto' or approved 'approval'
+      const ok = await verify(item);
+      results.push(ok
+        ? { id: item.id, status: 'installed' }
+        : { id: item.id, status: 'failed', error: 'doğrulama başarısız (kurulum sonrası görünmüyor)' });
+    } catch (e) {
+      log(`install ${item.id} failed: ${e.message}`);
+      results.push({ id: item.id, status: 'failed', error: e.message });
+    }
+  }
+  return results;
+}
