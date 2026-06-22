@@ -35,10 +35,10 @@ export async function executeInstalls(plan, { run, isInstalled, verify, approve,
       const ok = await verify(item);
       results.push(ok
         ? { id: item.id, status: 'installed' }
-        : { id: item.id, status: 'failed', error: 'doğrulama başarısız (kurulum sonrası görünmüyor)' });
+        : { id: item.id, status: 'failed', command: item.command, error: 'doğrulama başarısız (kurulum sonrası görünmüyor)' });
     } catch (e) {
       log(`install ${item.id} failed: ${e.message}`);
-      results.push({ id: item.id, status: 'failed', error: e.message });
+      results.push({ id: item.id, status: 'failed', command: item.command, error: e.message });
     }
   }
   return results;

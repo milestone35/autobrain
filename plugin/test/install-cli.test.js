@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runInstall } from '../lib/cli.js';
+import { runInstall, pluginListed, realEnv } from '../lib/cli.js';
 import { loadConfig } from '../lib/config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -56,4 +56,21 @@ test('runInstall fails soft when the decision file is missing', async () => {
   const res = await runInstall({ decisionFile: '/no/such/decision.json', mapFile: FIXT, config: loadConfig({}), now: '2026-06-25T00:00:00Z', env });
   assert.deepEqual(res.results, []);
   assert.match(res.lines.join('\n'), /okunamad|kurulmad/i);
+});
+
+test('pluginListed matches the qualified install ref and is collision-safe', () => {
+  // exact qualified ref present
+  assert.equal(pluginListed('api-security-testing@claude-plugins-official\n', 'claude-plugins-official::api-security-testing::skill::x'), true);
+  // plain plugin name on a word boundary
+  assert.equal(pluginListed('installed: api-security-testing (desc)', 'claude-plugins-official::api-security-testing::skill::x'), true);
+  // substring collision must NOT match: plugin "ai" vs "aikido" in the list
+  assert.equal(pluginListed('aikido@mp\n', 'mp::ai::skill::x'), false);
+  // absent
+  assert.equal(pluginListed('something-else@mp', 'mp::ai::skill::x'), false);
+});
+
+test('realEnv.approve gates strictly on approvedIds (autonomy boundary wiring)', async () => {
+  const env = realEnv(new Set(['mp::c::skill::ok']), () => {});
+  assert.equal(await env.approve({ id: 'mp::c::skill::ok' }), true);
+  assert.equal(await env.approve({ id: 'mp::c::skill::nope' }), false);
 });

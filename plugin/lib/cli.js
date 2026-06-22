@@ -85,8 +85,20 @@ export async function runDecide({ decisionFile, mapFile, config, now }) {
   return { decision, lines };
 }
 
-// plugin name is the 2nd segment of an id: marketplace::PLUGIN::kind::component
-function pluginName(id) { return String(id).split('::')[1] || id; }
+function escapeRegex(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// Does `claude plugin list` output reference this capability's plugin?
+// id format: marketplace::plugin::kind::component. We match the unique
+// "plugin@marketplace" install ref, OR the plugin name on word boundaries —
+// robust to either list format and immune to substring collisions
+// (e.g. plugin "ai" must NOT match "aikido").
+export function pluginListed(listText, id) {
+  const [marketplace, plugin] = String(id).split('::');
+  if (!plugin) return false;
+  const text = String(listText);
+  if (marketplace && text.includes(`${plugin}@${marketplace}`)) return true;
+  return new RegExp(`(^|[^\\w-])${escapeRegex(plugin)}([^\\w-]|$)`).test(text);
+}
 
 async function probePluginList() {
   try {
@@ -100,17 +112,17 @@ async function probePluginList() {
 // Real injected deps for actual installs. isInstalled is false when the probe is
 // unavailable (so we attempt); verify trusts the exit code when the probe is
 // unavailable (so a successful install is not falsely reported as failed).
-function realEnv(approvedIds, log) {
+export function realEnv(approvedIds, log) {
   return {
     run: async (command) => { await pexec(command); },
     isInstalled: async (item) => {
       const p = await probePluginList();
-      return p.ok && p.text.includes(pluginName(item.id));
+      return p.ok && pluginListed(p.text, item.id);
     },
     verify: async (item) => {
       const p = await probePluginList();
       if (!p.ok) { log('uyarı: kurulum doğrulanamadı (claude plugin list yok) — exit-code güveniliyor'); return true; }
-      return p.text.includes(pluginName(item.id));
+      return pluginListed(p.text, item.id);
     },
     approve: async (item) => approvedIds.has(item.id),
     log
