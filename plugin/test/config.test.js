@@ -41,3 +41,13 @@ test('loadConfig accepts valid confidenceThreshold and rejects out-of-range/non-
   assert.equal(loadConfig({ confidenceThreshold: -0.1 }).confidenceThreshold, DEFAULTS.confidenceThreshold);
   assert.equal(loadConfig({ confidenceThreshold: 'high' }).confidenceThreshold, DEFAULTS.confidenceThreshold);
 });
+
+test('loadConfig defaults autoInstall to true', () => {
+  assert.equal(loadConfig().autoInstall, true);
+  assert.equal(DEFAULTS.autoInstall, true);
+});
+
+test('loadConfig accepts a boolean autoInstall and rejects non-boolean', () => {
+  assert.equal(loadConfig({ autoInstall: false }).autoInstall, false);
+  assert.equal(loadConfig({ autoInstall: 'yes' }).autoInstall, DEFAULTS.autoInstall);
+});

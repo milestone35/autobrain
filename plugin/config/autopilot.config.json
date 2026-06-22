@@ -4,5 +4,6 @@
   "topN": 5,
   "scoreFloor": 0,
   "staleDays": 14,
-  "confidenceThreshold": 0.6
+  "confidenceThreshold": 0.6,
+  "autoInstall": true
 }
