@@ -32,7 +32,7 @@ function fakeEnv() {
 
 test('runInstall installs a trusted capability (auto) via injected env', async () => {
   const dir = await tmp();
-  const f = await writeDecision(dir, { decision: 'install_then_use', installs: ['mp::api-sec::skill::api-audit'] });
+  const f = await writeDecision(dir, { decision: 'install_then_use', installs: ['mp::api-sec::skill::api-audit'], capabilities: ['mp::api-sec::skill::api-audit'], method: 'x', rationale: 'r', confidence: 0.9 });
   const { env, calls } = fakeEnv();
   const res = await runInstall({ decisionFile: f, mapFile: FIXT, config: loadConfig({ autoInstall: true }), now: '2026-06-25T00:00:00Z', env });
   assert.equal(res.results[0].status, 'installed');
@@ -43,11 +43,22 @@ test('runInstall installs a trusted capability (auto) via injected env', async (
 
 test('runInstall reports skip (no run) when autoInstall is off', async () => {
   const dir = await tmp();
-  const f = await writeDecision(dir, { decision: 'install_then_use', installs: ['mp::api-sec::skill::api-audit'] });
+  const f = await writeDecision(dir, { decision: 'install_then_use', installs: ['mp::api-sec::skill::api-audit'], capabilities: ['mp::api-sec::skill::api-audit'], method: 'x', rationale: 'r', confidence: 0.9 });
   const { env, calls } = fakeEnv();
   const res = await runInstall({ decisionFile: f, mapFile: FIXT, config: loadConfig({ autoInstall: false }), now: '2026-06-25T00:00:00Z', env });
   assert.equal(res.results[0].status, 'skipped');
   assert.deepEqual(calls.run, []);
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('runInstall does NOT install a below-threshold decision (gate not bypassed)', async () => {
+  const dir = await tmp();
+  // Same trusted id, but low confidence — normalizeDecision must downgrade to no_capability_needed.
+  const f = await writeDecision(dir, { decision: 'install_then_use', installs: ['mp::api-sec::skill::api-audit'], capabilities: ['mp::api-sec::skill::api-audit'], method: 'x', rationale: 'r', confidence: 0.3 });
+  const { env, calls } = fakeEnv();
+  const res = await runInstall({ decisionFile: f, mapFile: FIXT, config: loadConfig({ autoInstall: true, confidenceThreshold: 0.6 }), now: '2026-06-25T00:00:00Z', env });
+  assert.deepEqual(res.results, []);          // empty plan -> nothing executed
+  assert.deepEqual(calls.run, []);            // never installed
   await rm(dir, { recursive: true, force: true });
 });
 

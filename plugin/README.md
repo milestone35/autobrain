@@ -52,5 +52,7 @@ In Claude Code (plugin installed):
 - The hook command uses `node`; the CC runtime must be able to resolve `node` on
   its PATH. If Node is in a non-PATH location (e.g. a conda env), ensure CC's
   environment can find it.
-- Council (autonomous decision) and auto-install arrive in later sub-projects;
-  this version only surfaces passive hints.
+- The `UserPromptSubmit` hook only surfaces passive hints; autonomous decision +
+  install happen on the explicit `/route` command (the council + installer), not per-prompt.
+- Trusted capabilities install silently (`autoInstall`); candidate/unknown (once web-discovered
+  sources exist) require a single approval.

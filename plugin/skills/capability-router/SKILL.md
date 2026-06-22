@@ -75,7 +75,8 @@ Read its results:
 
 Trusted capabilities install silently (no prompt) when `autoInstall` is on (the default). Never
 prompt for trusted installs. After installs complete, hand the task off to the chosen capability.
-Finally, clean up the scratch file.
+Finally, clean up the scratch file — but ONLY after any `--approved` re-runs are done (the re-run
+reads the same `.decision.tmp.json`, so do not delete it before then).
 
 ## Failure handling
 If any subagent fails or returns unparseable output, fall back to `no_capability_needed` and say so. Never break the user's underlying task — this is an advisory decision.

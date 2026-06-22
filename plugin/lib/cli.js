@@ -80,7 +80,7 @@ export async function runDecide({ decisionFile, mapFile, config, now }) {
     decision.installs.length ? `  kurulacak:  ${decision.installs.join(', ')}` : '  kurulacak:  -',
     decision.method ? `  yöntem: ${decision.method}` : '  yöntem: -',
     `  gerekçe: ${decision.rationale || '-'}`,
-    '(Kurulum bu sürümde otomatik DEĞİL — kurulacak yetenek(ler) için install komutu sonraki sürümde uygulanır.)'
+    '(install_then_use ise kurulum, güven sınırına göre yapılır: trusted sessiz, untrusted tek onayla.)'
   ];
   return { decision, lines };
 }
@@ -136,11 +136,15 @@ function formatInstallResult(r) {
 
 export async function runInstall({ decisionFile, mapFile, config, approvedIds = new Set(), now, env }) {
   const { map } = await loadMap({ mapFile, staleDays: config.staleDays, now });
-  let decision = null;
-  try { decision = JSON.parse(await readFile(decisionFile, 'utf8')); } catch { decision = null; }
-  if (!decision || !map) {
+  let raw = null;
+  try { raw = JSON.parse(await readFile(decisionFile, 'utf8')); } catch { raw = null; }
+  if (!raw || !map) {
     return { results: [], lines: ['[cc-autopilot] kurulum: karar/harita okunamadı, hiçbir şey kurulmadı'] };
   }
+  // Re-apply the same gate as `decide` so installing from a raw scratch file cannot
+  // bypass the confidence threshold / id-filtering (low confidence -> no installs).
+  const knownIds = new Set(map.capabilities.map((c) => c.id));
+  const decision = normalizeDecision(raw, { confidenceThreshold: config.confidenceThreshold, knownIds });
   const plan = planInstalls(decision, map, { autoInstall: config.autoInstall });
   const deps = env || realEnv(approvedIds, (m) => console.error(m));
   const results = await executeInstalls(plan, deps);
