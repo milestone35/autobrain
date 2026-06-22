@@ -56,8 +56,26 @@ node "$PLUGIN_ROOT/lib/cli.js" decide "$PLUGIN_ROOT/.decision.tmp.json"
 ```
 This normalizes the decision: it enforces the confidence threshold (low confidence -> `no_capability_needed`), strips ids not in the map, and clears nonsensical install lists. The **last line** of the command's output is the canonical decision JSON — parse that and treat it as the FINAL decision (it overrides your synthesis); the lines above it are just a human-readable summary.
 
-## Step 7 — Present
-Report the final decision to the user: the `decision`, chosen `capabilities`, `method`, and `rationale`. If `install_then_use`, show the install command(s) for each id (from the candidate JSON's `install` field) as text — DO NOT run them; autonomous installation arrives in a later version. Clean up the scratch file.
+## Step 7 — Present and (if needed) install
+Report the final decision: the `decision`, chosen `capabilities`, `method`, and `rationale`.
+
+If the decision is `install_then_use`, run the installer over the same decision file:
+```bash
+node "$PLUGIN_ROOT/lib/cli.js" install "$PLUGIN_ROOT/.decision.tmp.json"
+```
+Read its results:
+- `installed` / `already-installed` / `skipped` — report them as-is.
+- `needs-approval` — these are candidate/unknown (untrusted) capabilities. Ask the user ONCE
+  whether to install them (show the id + install command). If they agree, re-run with the approved ids:
+  ```bash
+  node "$PLUGIN_ROOT/lib/cli.js" install "$PLUGIN_ROOT/.decision.tmp.json" --approved <comma,separated,ids>
+  ```
+  If they decline, report that those capabilities were skipped.
+- `failed` — report which failed; continue without them and offer the manual install command.
+
+Trusted capabilities install silently (no prompt) when `autoInstall` is on (the default). Never
+prompt for trusted installs. After installs complete, hand the task off to the chosen capability.
+Finally, clean up the scratch file.
 
 ## Failure handling
 If any subagent fails or returns unparseable output, fall back to `no_capability_needed` and say so. Never break the user's underlying task — this is an advisory decision.

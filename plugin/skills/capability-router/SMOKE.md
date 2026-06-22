@@ -24,3 +24,21 @@ normalized to `no_capability_needed`.
 - The final decision JSON (printed after the `decide` step).
 - Whether it matches the expectation above.
 - Any case where the council invented an id (should be impossible — `decide` strips unknown ids).
+
+## Scenario D — trusted install_then_use -> silent auto-install
+Precondition: the chosen capability is NOT yet installed, `autoInstall: true` (default).
+Command: `/route <request needing an uninstalled trusted plugin>`
+Expect: decision `install_then_use`; the installer runs `claude plugin install ...` with no prompt;
+result `installed` (or `failed` with a manual command if the environment blocks it). No approval asked.
+
+## Scenario E — autoInstall off -> command shown, nothing installed
+Precondition: set `autoInstall: false` in `config/autopilot.config.json`.
+Command: `/route <request needing an uninstalled trusted plugin>`
+Expect: result `skipped` with the install command printed; nothing is installed. (Restore
+`autoInstall: true` afterward.)
+
+## What to record (installs)
+- The `install` results block (status per id).
+- For trusted: confirm NO approval prompt appeared.
+- For any `needs-approval` (only once untrusted/web-discovered capabilities exist): confirm a single
+  approval was requested and nothing installed without it.
