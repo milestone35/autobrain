@@ -102,3 +102,9 @@ test('planExecution returns [] for no_capability_needed or empty', () => {
   assert.deepEqual(planExecution({ decision: 'no_capability_needed', capabilities: [] }, MAP), []);
   assert.deepEqual(planExecution(null, MAP), []);
 });
+
+test('planExecution processes install_then_use decisions (install first, then execute)', () => {
+  const decision = { decision: 'install_then_use', capabilities: ['mp::p::skill::s'] };
+  const steps = planExecution(decision, MAP);
+  assert.deepEqual(steps.map((s) => s.id), ['mp::p::skill::s']);
+});

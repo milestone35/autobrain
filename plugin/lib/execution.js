@@ -42,6 +42,7 @@ export function directiveFor(cap, action) {
 }
 
 export function planExecution(decision, map) {
+  // install_then_use is intentionally allowed through — install runs first (Step 7), then this plan executes.
   if (!decision || decision.decision === 'no_capability_needed') return [];
   const byId = new Map((map?.capabilities || []).map((c) => [c.id, c]));
   const steps = [];
