@@ -1,12 +1,12 @@
 ---
 name: capability-router
-description: Run the cc-autopilot multi-agent capability council to decide which capabilities best serve a request. Invoked by the /route command; gathers matcher candidates, runs a Planner and a Critic subagent (<=2 rounds), and produces one validated decision object. Decides only — never installs.
+description: Run the cc-autopilot multi-agent capability council to decide which capabilities best serve a request. Invoked by the /route command; gathers matcher candidates, runs a Planner and a Critic subagent (<=2 rounds), and produces one validated decision object. Then installs any required trusted capability (Step 7) and carries out the task (Step 8): read-only steps auto-run, side-effecting steps need one approval.
 allowed-tools: Bash, Task, Write, Read, Skill
 ---
 
 # Capability Router — multi-agent decision council
 
-You orchestrate a small council to decide, autonomously, which capabilities (if any) best serve the user's request. You DECIDE; you never install anything. Follow these steps exactly.
+You orchestrate a small council to decide, autonomously, which capabilities (if any) best serve the user's request. The council DECIDES; then (Step 7) any required trusted capability is installed and (Step 8) the task is carried out — read-only steps automatically, side-effecting steps after a single approval. Follow these steps exactly.
 
 ## Inputs
 - `REQUEST`: the user's request text (the `/route` argument, or the current task).
