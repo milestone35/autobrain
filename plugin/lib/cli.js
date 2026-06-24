@@ -159,6 +159,11 @@ export async function runInstall({ decisionFile, mapFile, config, approvedIds = 
   return { results, lines };
 }
 
+function parseApprovedIds(argv) {
+  const ai = argv.indexOf('--approved');
+  return ai !== -1 && argv[ai + 1] ? new Set(argv[ai + 1].split(',')) : new Set();
+}
+
 function formatExecStep(s) {
   return `  [${s.status}] ${s.risk} · ${s.action}: ${s.id}`;
 }
@@ -214,8 +219,7 @@ async function main(argv) {
       process.exitCode = 1;
       return;
     }
-    const ai = argv.indexOf('--approved');
-    const approvedIds = ai !== -1 && argv[ai + 1] ? new Set(argv[ai + 1].split(',')) : new Set();
+    const approvedIds = parseApprovedIds(argv);
     const { lines } = await runInstall({ decisionFile, mapFile, config, approvedIds, now });
     console.log(lines.join('\n'));
   } else if (cmd === 'execute') {
@@ -225,8 +229,7 @@ async function main(argv) {
       process.exitCode = 1;
       return;
     }
-    const ai = argv.indexOf('--approved');
-    const approvedIds = ai !== -1 && argv[ai + 1] ? new Set(argv[ai + 1].split(',')) : new Set();
+    const approvedIds = parseApprovedIds(argv);
     const { steps, decision, lines } = await runExecute({ decisionFile, mapFile, config, approvedIds, now });
     console.log(lines.join('\n'));
     console.log(`\n${JSON.stringify({ decision, steps })}`);
