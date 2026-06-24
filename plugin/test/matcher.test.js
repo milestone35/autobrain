@@ -82,3 +82,12 @@ test('rankCandidates: relevance still dominates builtin preference', () => {
   // higher-score plugin must still rank first; builtin preference is only a tie-break
   assert.deepEqual(rankCandidates(scored, 5).map((c) => c.id), ['plugin-cap', 'builtin-cap']);
 });
+
+test('rankCandidates: isBuiltin via source.discoveredVia also gets tie-break preference', () => {
+  const scored = [
+    { cap: { id: 'plugin-cap', trust: 'trusted', popularity: { unique_installs: 50 } }, score: 5 },
+    { cap: { id: 'builtin-via-source', trust: 'trusted', source: { discoveredVia: 'builtin' }, popularity: { unique_installs: 0 } }, score: 5 }
+  ];
+  // builtin recognized via source.discoveredVia (not the trust field) still wins the tie
+  assert.deepEqual(rankCandidates(scored, 5).map((c) => c.id), ['builtin-via-source', 'plugin-cap']);
+});
