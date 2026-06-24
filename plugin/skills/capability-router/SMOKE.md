@@ -42,3 +42,25 @@ Expect: result `skipped` with the install command printed; nothing is installed.
 - For trusted: confirm NO approval prompt appeared.
 - For any `needs-approval` (only once untrusted/web-discovered capabilities exist): confirm a single
   approval was requested and nothing installed without it.
+
+## SP6 — Execution (Step 8) smoke scenarios
+
+These are manual transcript checks (no automated runner). The deterministic plan/risk pieces
+are unit-tested in `test/execution.test.js` and `test/execute-cli.test.js`; these verify the
+recipe's behavior end-to-end.
+
+### S1 — read-only runs without approval
+Request: "this repoda 'TODO' geçen yerleri bul".
+Expect: council → `use_existing` with builtin `Grep` → `execute` plan shows `[ready] read-only · use_tool: builtin::core::builtin-tool::Grep` → agent runs Grep directly, no approval prompt, reports matches.
+
+### S2 — side-effecting asks once, then runs
+Request: "10.10.15.141 sunucusunda `df -h` çalıştır".
+Expect: council → `use_existing` with builtin `shell` (bang) → `execute` plan shows `[needs-approval] side-effecting · run_shell: builtin::core::bang::shell` → agent shows the EXACT command (`ssh root@10.10.15.141 df -h`) and asks one approval → on yes, re-run with `--approved builtin::core::bang::shell`, run via Bash, report output; on no, skip and say so.
+
+### S3 — mixed plan, single approval
+Request that yields one read-only + one side-effecting step.
+Expect: read-only step runs immediately; the side-effecting step is batched into a single approval message; declining skips only the side-effecting step while the read-only result still stands.
+
+### S4 — fail-soft
+Simulate `execute` erroring (e.g. corrupt `.decision.tmp.json`).
+Expect: recipe does NOT break the task; falls back to normal behavior and says so.
