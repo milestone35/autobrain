@@ -10,6 +10,7 @@ export function loadTrustedSet(trustedSourcesJson) {
 }
 
 export function classifyTrust(cap, trustedSet) {
+  if (cap.source?.discoveredVia === 'builtin') return 'builtin';
   if (cap.source?.discoveredVia === 'official') return 'trusted';
   const repo = normalizeRepo(cap.source?.repo);
   if (repo && trustedSet.has(repo)) return 'trusted';

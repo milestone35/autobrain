@@ -38,3 +38,11 @@ test('applyTrust sets trust on every capability', () => {
   const out = applyTrust([cap({ source: { repo: null, discoveredVia: 'official' } })], new Set());
   assert.equal(out[0].trust, 'trusted');
 });
+
+test('discoveredVia builtin => builtin tier', () => {
+  assert.equal(classifyTrust(cap({ source: { repo: null, discoveredVia: 'builtin' } }), new Set()), 'builtin');
+});
+
+test('builtin tier wins even if a repo is present', () => {
+  assert.equal(classifyTrust(cap({ source: { repo: 'github:x/y', discoveredVia: 'builtin' } }), new Set()), 'builtin');
+});
