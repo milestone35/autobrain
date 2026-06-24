@@ -8,6 +8,7 @@ import { normalizeDecision } from './decision.js';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { planInstalls, executeInstalls } from './installer.js';
+import { planExecution } from './execution.js';
 
 const pexec = promisify(exec);
 
@@ -158,6 +159,32 @@ export async function runInstall({ decisionFile, mapFile, config, approvedIds = 
   return { results, lines };
 }
 
+function formatExecStep(s) {
+  return `  [${s.status}] ${s.risk} · ${s.action}: ${s.id}`;
+}
+
+export async function runExecute({ decisionFile, mapFile, config, approvedIds = new Set(), now }) {
+  const { map } = await loadMap({ mapFile, staleDays: config.staleDays, now });
+  let raw = null;
+  try { raw = JSON.parse(await readFile(decisionFile, 'utf8')); } catch { raw = null; }
+  if (!raw || !map) {
+    return { steps: [], decision: 'no_capability_needed', lines: ['[cc-autopilot] yürütme: karar/harita okunamadı, plan yok'] };
+  }
+  // Re-apply the same gate as `decide`/`install` (low confidence / unknown ids -> nothing to run).
+  const knownIds = new Set(map.capabilities.map((c) => c.id));
+  const decision = normalizeDecision(raw, { confidenceThreshold: config.confidenceThreshold, knownIds });
+  const steps = planExecution(decision, map).map((s) => ({
+    ...s,
+    status: s.risk === 'read-only' || approvedIds.has(s.id) ? 'ready' : 'needs-approval'
+  }));
+  const lines = ['[cc-autopilot] yürütme planı:', ...steps.map(formatExecStep)];
+  if (!steps.length) lines.push('  (yürütülecek adım yok)');
+  if (steps.some((s) => s.status === 'needs-approval')) {
+    lines.push("(Yan-etkili adımlar onay bekliyor — '--approved <id>' ile teyit edin.)");
+  }
+  return { steps, decision: decision.decision, lines };
+}
+
 async function main(argv) {
   const cmd = argv[2];
   const config = await loadPluginConfig();
@@ -191,8 +218,20 @@ async function main(argv) {
     const approvedIds = ai !== -1 && argv[ai + 1] ? new Set(argv[ai + 1].split(',')) : new Set();
     const { lines } = await runInstall({ decisionFile, mapFile, config, approvedIds, now });
     console.log(lines.join('\n'));
+  } else if (cmd === 'execute') {
+    const decisionFile = argv[3];
+    if (!decisionFile || decisionFile.startsWith('--')) {
+      console.error('Usage: cli.js execute <decisionFile> [--approved id1,id2]');
+      process.exitCode = 1;
+      return;
+    }
+    const ai = argv.indexOf('--approved');
+    const approvedIds = ai !== -1 && argv[ai + 1] ? new Set(argv[ai + 1].split(',')) : new Set();
+    const { steps, decision, lines } = await runExecute({ decisionFile, mapFile, config, approvedIds, now });
+    console.log(lines.join('\n'));
+    console.log(`\n${JSON.stringify({ decision, steps })}`);
   } else {
-    console.error('Usage: cli.js <preview|candidates|decide|install> ...');
+    console.error('Usage: cli.js <preview|candidates|decide|install|execute> ...');
     process.exitCode = 1;
   }
 }

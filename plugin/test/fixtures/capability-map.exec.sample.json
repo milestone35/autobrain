@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-24T00:00:00Z",
+  "sources": {},
+  "capabilities": [
+    {
+      "id": "builtin::core::bang::shell",
+      "kind": "bang", "name": "shell",
+      "description": "Run any shell command inline in the session.",
+      "keywords": ["shell", "ssh", "command"],
+      "source": { "marketplace": "builtin", "repo": null, "discoveredVia": "builtin" },
+      "install": null, "trust": "builtin", "cost": null,
+      "popularity": { "unique_installs": null }, "lastSeen": "2026-06-24T00:00:00Z"
+    },
+    {
+      "id": "builtin::core::builtin-tool::Grep",
+      "kind": "builtin-tool", "name": "Grep",
+      "description": "Search file contents with a regular expression.",
+      "keywords": ["grep", "search", "find"],
+      "source": { "marketplace": "builtin", "repo": null, "discoveredVia": "builtin" },
+      "install": null, "trust": "builtin", "cost": null,
+      "popularity": { "unique_installs": null }, "lastSeen": "2026-06-24T00:00:00Z"
+    },
+    {
+      "id": "mp::p::skill::s",
+      "kind": "skill", "name": "s",
+      "description": "An installable skill.",
+      "keywords": ["skill"],
+      "source": { "marketplace": "mp", "repo": null, "discoveredVia": "official" },
+      "install": { "method": "plugin", "command": "claude plugin install p@mp", "package": null },
+      "trust": "trusted", "cost": null,
+      "popularity": { "unique_installs": 10 }, "lastSeen": "2026-06-24T00:00:00Z"
+    }
+  ]
+}
