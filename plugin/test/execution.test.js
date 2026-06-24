@@ -53,3 +53,9 @@ test('classifyRisk: unrecognized builtin name is side-effecting (fail-safe)', ()
   assert.equal(classifyRisk({ kind: 'builtin-tool', name: 'FutureTool' }), 'side-effecting');
   assert.equal(classifyRisk({ kind: 'builtin-agent', name: 'future-agent' }), 'side-effecting');
 });
+
+test('classifyRisk: prototype-key kinds are side-effecting (no crash)', () => {
+  assert.equal(classifyRisk({ kind: '__proto__', name: 'Read' }), 'side-effecting');
+  assert.equal(classifyRisk({ kind: 'constructor', name: 'call' }), 'side-effecting');
+  assert.equal(classifyRisk({ kind: 'toString', name: 'x' }), 'side-effecting');
+});
