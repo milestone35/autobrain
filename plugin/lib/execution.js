@@ -1,17 +1,18 @@
-const KIND_ACTION = {
-  bang: 'run_shell',
-  'builtin-tool': 'use_tool',
-  slash: 'invoke_slash',
-  'builtin-agent': 'dispatch_agent',
-  agent: 'dispatch_agent',
-  skill: 'invoke_skill',
-  command: 'invoke_slash',
-  mcp: 'call_mcp',
-  plugin: 'use_directly'
-};
+const KIND_ACTION = new Map([
+  ['bang', 'run_shell'],
+  ['builtin-tool', 'use_tool'],
+  ['slash', 'invoke_slash'],
+  ['builtin-agent', 'dispatch_agent'],
+  ['agent', 'dispatch_agent'],
+  ['skill', 'invoke_skill'],
+  ['command', 'invoke_slash'],
+  ['mcp', 'call_mcp'],
+  ['plugin', 'use_directly']
+]);
 
+// Map.get never walks the prototype chain, so prototype keys (__proto__, etc.) fall back safely.
 export function actionFor(kind) {
-  return KIND_ACTION[kind] ?? 'use_directly';
+  return KIND_ACTION.get(kind) ?? 'use_directly';
 }
 
 const READ_ONLY = new Map([

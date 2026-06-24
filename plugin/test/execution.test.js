@@ -59,3 +59,9 @@ test('classifyRisk: prototype-key kinds are side-effecting (no crash)', () => {
   assert.equal(classifyRisk({ kind: 'constructor', name: 'call' }), 'side-effecting');
   assert.equal(classifyRisk({ kind: 'toString', name: 'x' }), 'side-effecting');
 });
+
+test('actionFor: prototype-key kinds fall back to use_directly (no leak)', () => {
+  assert.equal(actionFor('__proto__'), 'use_directly');
+  assert.equal(actionFor('constructor'), 'use_directly');
+  assert.equal(actionFor('toString'), 'use_directly');
+});
