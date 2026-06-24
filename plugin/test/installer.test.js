@@ -117,3 +117,13 @@ test('executeInstalls catches a throwing run and continues to the next item', as
   assert.equal(res[1].status, 'installed');        // continued
   assert.deepEqual(runCalls, ['cmd:a', 'cmd:c']);
 });
+
+test('planInstalls skips builtin capabilities (install:null => not runnable)', () => {
+  const map = { capabilities: [
+    { id: 'builtin::core::bang::shell', trust: 'builtin', install: null },
+    { id: 'mp::p::skill::s', trust: 'trusted', install: { command: 'claude plugin install p@mp' } }
+  ] };
+  const decision = { installs: ['builtin::core::bang::shell', 'mp::p::skill::s'] };
+  const plan = planInstalls(decision, map, { autoInstall: true });
+  assert.deepEqual(plan.map((p) => p.id), ['mp::p::skill::s']);  // builtin absent
+});
