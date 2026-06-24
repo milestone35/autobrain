@@ -29,10 +29,17 @@ export function scoreCapability(promptTokens, cap) {
   return nameHits * 3 + kwHits * 2 + descHits * 1;
 }
 
+function isBuiltin(cap) {
+  return cap?.trust === 'builtin' || cap?.source?.discoveredVia === 'builtin';
+}
+
 export function rankCandidates(scored, topN) {
   return [...scored]
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
+      const ab = isBuiltin(a.cap) ? 1 : 0;
+      const bb = isBuiltin(b.cap) ? 1 : 0;
+      if (bb !== ab) return bb - ab;                 // equal score: builtin (zero-install) first
       const ai = a.cap.popularity?.unique_installs ?? 0;
       const bi = b.cap.popularity?.unique_installs ?? 0;
       if (bi !== ai) return bi - ai;

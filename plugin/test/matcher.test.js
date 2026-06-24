@@ -64,3 +64,21 @@ test('scoreCapability tokenizes multi-word keywords (contract robustness)', () =
   assert.equal(scoreCapability(tokenize('api'), cap), 2);       // 1 keyword token * 2
   assert.equal(scoreCapability(tokenize('security'), cap), 2);
 });
+
+test('rankCandidates prefers builtin over installable on equal score', () => {
+  const scored = [
+    { cap: { id: 'plugin-cap', trust: 'trusted', popularity: { unique_installs: 999 } }, score: 5 },
+    { cap: { id: 'builtin-cap', trust: 'builtin', popularity: { unique_installs: 0 } }, score: 5 }
+  ];
+  // equal score: builtin wins even though the plugin has far more installs
+  assert.deepEqual(rankCandidates(scored, 5).map((c) => c.id), ['builtin-cap', 'plugin-cap']);
+});
+
+test('rankCandidates: relevance still dominates builtin preference', () => {
+  const scored = [
+    { cap: { id: 'builtin-cap', trust: 'builtin', popularity: {} }, score: 2 },
+    { cap: { id: 'plugin-cap', trust: 'trusted', popularity: {} }, score: 9 }
+  ];
+  // higher-score plugin must still rank first; builtin preference is only a tie-break
+  assert.deepEqual(rankCandidates(scored, 5).map((c) => c.id), ['plugin-cap', 'builtin-cap']);
+});
