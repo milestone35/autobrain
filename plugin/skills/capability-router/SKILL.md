@@ -26,6 +26,7 @@ Rules for the Planner:
 - Choose ONLY from the provided candidate ids. Never invent ids.
 - Prefer the smallest, cheapest set that does the job; prefer already-suitable over installing more.
 - `confidence` in [0,1] reflects how sure it is a listed capability genuinely helps.
+- A candidate whose `trust` is `builtin` (kind `bang`/`builtin-tool`/`slash`/`builtin-agent`) is ALREADY available — it needs no install. Prefer such a candidate when it suffices, and never list it under `installs`. (E.g. for a quick search, prefer the builtin `Grep` over installing a search plugin.)
 
 ## Step 3 — Critic subagent (Task tool)
 Dispatch ONE subagent (general-purpose). Give it: the REQUEST, the candidate JSON, and the Planner's proposal. Instruct it to attack the proposal and return strict JSON:
@@ -72,6 +73,9 @@ Read its results:
   ```
   If they decline, report that those capabilities were skipped.
 - `failed` — report which failed; continue without them and offer the manual install command.
+
+Builtin capabilities (`trust: builtin`) never appear in the install plan (their `install` is null), so
+the installer simply skips them — use them directly, no prompt, no install.
 
 Trusted capabilities install silently (no prompt) when `autoInstall` is on (the default). Never
 prompt for trusted installs. After installs complete, hand the task off to the chosen capability.
