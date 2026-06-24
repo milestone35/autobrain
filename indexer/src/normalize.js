@@ -16,7 +16,7 @@ export function deriveKeywords(text, limit = 25) {
   return [...new Set(words)].sort().slice(0, limit);
 }
 
-const KINDS = new Set(['skill', 'agent', 'mcp', 'command', 'plugin']);
+const KINDS = new Set(['skill', 'agent', 'mcp', 'command', 'plugin', 'bang', 'builtin-tool', 'slash', 'builtin-agent']);
 
 export function validateCapability(input = {}) {
   const errs = [];

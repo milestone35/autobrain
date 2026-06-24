@@ -64,3 +64,16 @@ test('makeCapability: same name, different kind => distinct ids (no collision)',
   assert.equal(skill.id, 'mp::p::skill::dup');
   assert.equal(command.id, 'mp::p::command::dup');
 });
+
+test('makeCapability accepts the four builtin kinds', () => {
+  const base = { name: 'x', marketplace: 'builtin', plugin: 'core', component: 'x', now: 't' };
+  for (const kind of ['bang', 'builtin-tool', 'slash', 'builtin-agent']) {
+    const c = makeCapability({ ...base, kind });
+    assert.equal(c.kind, kind);
+  }
+});
+
+test('validateCapability still rejects an unknown kind', () => {
+  const errs = validateCapability({ kind: 'nonsense', name: 'x', marketplace: 'builtin', plugin: 'core' });
+  assert.ok(errs.some((e) => e.includes('kind')));
+});
