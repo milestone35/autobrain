@@ -55,7 +55,7 @@ Run:
 ```bash
 node "$PLUGIN_ROOT/lib/cli.js" decide "$PLUGIN_ROOT/.decision.tmp.json"
 ```
-This normalizes the decision: it enforces the confidence threshold (low confidence -> `no_capability_needed`), strips ids not in the map, and clears nonsensical install lists. The **last line** of the command's output is the canonical decision JSON — parse that and treat it as the FINAL decision (it overrides your synthesis); the lines above it are just a human-readable summary.
+This normalizes the decision: it enforces the confidence threshold (low confidence -> `no_capability_needed`), strips ids not in the map, and clears nonsensical install lists. The **last non-empty line** of the command's output is the canonical decision JSON — parse that and treat it as the FINAL decision (it overrides your synthesis); the lines above it are just a human-readable summary.
 
 ## Step 7 — Present and (if needed) install
 Report the final decision: the `decision`, chosen `capabilities`, `method`, and `rationale`.
@@ -86,12 +86,12 @@ Turn the decision into action. Run:
 ```bash
 node "$PLUGIN_ROOT/lib/cli.js" execute "$PLUGIN_ROOT/.decision.tmp.json"
 ```
-Parse the **last line** (canonical JSON `{ "decision": ..., "steps": [...] }`); the lines above are a human-readable summary. Each step is `{ id, name, kind, action, risk, directive, status }`.
+Parse the **last non-empty line** (canonical JSON `{ "decision": ..., "steps": [...] }`); the lines above are a human-readable summary. Each step is `{ id, name, kind, action, risk, directive, status }`.
 
 - If `decision` is `no_capability_needed` or `steps` is empty → do nothing here; accomplish the user's request with your normal behavior.
 - **Ready steps** (`status: "ready"` — read-only) → carry them out NOW using the real tool the `action`/`directive` names: `use_tool`→use Grep/Read/etc.; `dispatch_agent`→Explore/Plan via the Task tool; `invoke_slash`→the analysis command. No approval needed.
 - **Approval-pending steps** (`status: "needs-approval"` — side-effecting) → present ALL of them in ONE message. For each, show `id`, `action`, and for `run_shell` the EXACT shell command you will run (composed from the user's request). Ask for a single approval.
-  - If approved: confirm with the same command plus the approved ids, then carry out each step with the real tool (`run_shell`→Bash; `use_tool`→Write/Edit/Bash; `dispatch_agent`→Task; `invoke_skill`→Skill; `call_mcp`→the MCP tool):
+  - If approved: run the confirmation command below (it should now report every approved step as `status: "ready"`) — the CLI itself executes nothing, so then carry out each step yourself with the real tool (`run_shell`→Bash; `use_tool`→Write/Edit/Bash; `dispatch_agent`→Task; `invoke_skill`→Skill; `call_mcp`→the MCP tool):
     ```bash
     node "$PLUGIN_ROOT/lib/cli.js" execute "$PLUGIN_ROOT/.decision.tmp.json" --approved <comma,separated,ids>
     ```
@@ -100,7 +100,7 @@ Parse the **last line** (canonical JSON `{ "decision": ..., "steps": [...] }`); 
 
 **Fail-soft:** if `execute` errors or the plan is unusable, do NOT break the user's task — fall back to your normal behavior and say so. A single step's failure does not abort the rest; continue and summarize at the end.
 
-Finally, clean up the scratch file (`PLUGIN_ROOT/.decision.tmp.json`) — but ONLY after all `--approved` re-runs are done.
+Finally, clean up the scratch file (`PLUGIN_ROOT/.decision.tmp.json`) — but ONLY after BOTH the Step 7 install flow AND this Step 8 execute (including any Step 8 `--approved` re-run) are fully done.
 
 ## Failure handling
 If any subagent fails or returns unparseable output, fall back to `no_capability_needed` and say so. Never break the user's underlying task — this is an advisory decision.
