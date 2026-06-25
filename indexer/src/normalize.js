@@ -54,3 +54,21 @@ export function makeCapability(input) {
     lastSeen: input.now || ''
   };
 }
+
+// Build plugin capabilities from a marketplace.json manifest. Shared by the
+// `known` (local) and `github` (web) sources. installCommand(pluginName) -> string.
+export function capabilitiesFromManifest(manifest, { marketplace, repo = null, discoveredVia, installCommand, now }) {
+  const caps = [];
+  for (const p of manifest?.plugins || []) {
+    if (!p || typeof p.name !== 'string' || !p.name) continue;
+    caps.push(makeCapability({
+      kind: 'plugin', name: p.name, description: p.description || '',
+      keywords: deriveKeywords([p.name, p.description].filter(Boolean).join(' ')),
+      marketplace, plugin: p.name,
+      install: { method: 'plugin', command: installCommand(p.name), package: null },
+      cost: null, popularity: {},
+      source: { repo, discoveredVia }, now
+    }));
+  }
+  return caps;
+}

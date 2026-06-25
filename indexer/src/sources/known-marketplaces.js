@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { readJson } from '../store.js';
-import { makeCapability, deriveKeywords } from '../normalize.js';
+import { capabilitiesFromManifest } from '../normalize.js';
 import { normalizeRepo } from '../trust.js';
 
 export const name = 'known';
@@ -32,16 +32,11 @@ export async function collect(ctx) {
         log(`known: no manifest for ${mpName}, skipping`);
         continue;
       }
-      for (const p of manifest.plugins || []) {
-        capabilities.push(makeCapability({
-          kind: 'plugin', name: p.name, description: p.description || '',
-          keywords: deriveKeywords([p.name, p.description].filter(Boolean).join(' ')),
-          marketplace: mpName, plugin: p.name,
-          install: { method: 'plugin', command: `claude plugin install ${p.name}@${mpName}`, package: null },
-          cost: null, popularity: {},
-          source: { repo, discoveredVia: 'known' }, now
-        }));
-      }
+      const caps = capabilitiesFromManifest(manifest, {
+        marketplace: mpName, repo, discoveredVia: 'known',
+        installCommand: (n) => `claude plugin install ${n}@${mpName}`, now
+      });
+      for (const c of caps) capabilities.push(c);
     } catch (e) {
       log(`known: skipping ${mpName}: ${e.message}`);
     }

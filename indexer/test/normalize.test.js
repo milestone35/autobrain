@@ -77,3 +77,25 @@ test('validateCapability still rejects an unknown kind', () => {
   const errs = validateCapability({ kind: 'nonsense', name: 'x', marketplace: 'builtin', plugin: 'core' });
   assert.ok(errs.some((e) => e.includes('kind')));
 });
+
+import { capabilitiesFromManifest } from '../src/normalize.js';
+
+test('capabilitiesFromManifest builds one plugin cap per manifest plugin', () => {
+  const manifest = { plugins: [{ name: 'p1', description: 'd1' }, { name: 'p2' }, { bad: true }] };
+  const caps = capabilitiesFromManifest(manifest, {
+    marketplace: 'mp', repo: 'github:o/r', discoveredVia: 'github',
+    installCommand: (n) => `cmd ${n}`, now: 't'
+  });
+  assert.equal(caps.length, 2);                       // entry without a name is skipped
+  assert.equal(caps[0].id, 'mp::p1::plugin');
+  assert.equal(caps[0].kind, 'plugin');
+  assert.equal(caps[0].install.command, 'cmd p1');
+  assert.equal(caps[0].install.method, 'plugin');
+  assert.equal(caps[0].source.repo, 'github:o/r');
+  assert.equal(caps[0].source.discoveredVia, 'github');
+  assert.equal(caps[0].lastSeen, 't');
+});
+
+test('capabilitiesFromManifest returns [] for a manifest with no plugins', () => {
+  assert.deepEqual(capabilitiesFromManifest({}, { marketplace: 'm', discoveredVia: 'x', installCommand: () => 'c', now: 't' }), []);
+});
