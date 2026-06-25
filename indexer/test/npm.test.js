@@ -33,7 +33,7 @@ test('parseNpmSearch emits candidate mcp caps for likely servers only', () => {
   const c = caps[0];
   assert.equal(c.kind, 'mcp');
   assert.equal(c.name, 'cool-mcp-server');
-  assert.equal(c.marketplace, 'npm');
+  assert.equal(c.source.marketplace, 'npm');
   assert.equal(c.source.discoveredVia, 'npm');
   assert.equal(c.source.repo, 'github:o/r');
   assert.equal(c.install.method, 'mcp');

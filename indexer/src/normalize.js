@@ -38,7 +38,6 @@ export function makeCapability(input) {
     id: makeId({ marketplace: input.marketplace, plugin: input.plugin, kind: input.kind, component: input.component }),
     kind: input.kind,
     name: input.name,
-    marketplace: input.marketplace,
     description: input.description || '',
     keywords: Array.isArray(input.keywords) ? input.keywords : [],
     source: {
