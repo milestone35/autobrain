@@ -55,12 +55,16 @@ export function makeCapability(input) {
   };
 }
 
+// Plugin names are interpolated into a shell-run install command; reject names with
+// shell metacharacters (defense against injection from untrusted manifest data).
+const SAFE_PLUGIN_NAME = /^[A-Za-z0-9_.@-]+$/;
+
 // Build plugin capabilities from a marketplace.json manifest. Shared by the
 // `known` (local) and `github` (web) sources. installCommand(pluginName) -> string.
 export function capabilitiesFromManifest(manifest, { marketplace, repo = null, discoveredVia, installCommand, now }) {
   const caps = [];
   for (const p of manifest?.plugins || []) {
-    if (!p || typeof p.name !== 'string' || !p.name) continue;
+    if (!p || typeof p.name !== 'string' || !p.name || !SAFE_PLUGIN_NAME.test(p.name)) continue;
     caps.push(makeCapability({
       kind: 'plugin', name: p.name, description: p.description || '',
       keywords: deriveKeywords([p.name, p.description].filter(Boolean).join(' ')),

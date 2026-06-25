@@ -18,8 +18,9 @@ export function parseCodeSearch(json, cap = REPO_CAP) {
   for (const it of items) {
     const fullName = it?.repository?.full_name;
     const path = it?.path;
+    if (!fullName || !path) continue;
     const key = String(fullName).toLowerCase();
-    if (!fullName || !path || seen.has(key)) continue;
+    if (seen.has(key)) continue;
     const [owner, repo] = String(fullName).split('/');
     if (!owner || !repo) continue;
     seen.add(key);

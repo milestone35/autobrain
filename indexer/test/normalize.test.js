@@ -99,3 +99,11 @@ test('capabilitiesFromManifest builds one plugin cap per manifest plugin', () =>
 test('capabilitiesFromManifest returns [] for a manifest with no plugins', () => {
   assert.deepEqual(capabilitiesFromManifest({}, { marketplace: 'm', discoveredVia: 'x', installCommand: () => 'c', now: 't' }), []);
 });
+
+test('capabilitiesFromManifest skips plugins with unsafe names (injection defense)', () => {
+  const manifest = { plugins: [{ name: 'ok-plugin' }, { name: 'evil && rm -rf /' }, { name: 'has space' }] };
+  const caps = capabilitiesFromManifest(manifest, {
+    marketplace: 'mp', discoveredVia: 'x', installCommand: (n) => `cmd ${n}`, now: 't'
+  });
+  assert.deepEqual(caps.map((c) => c.name), ['ok-plugin']);     // unsafe names dropped
+});

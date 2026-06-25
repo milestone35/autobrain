@@ -79,3 +79,11 @@ test('collect falls back to a safe marketplace name when manifest.name is unsafe
   // unsafe manifest name dropped -> fallback "Owner-Repo"; no stray shell metacharacters from the name
   assert.equal(res.capabilities[0].install.command, 'claude plugin marketplace add Owner/Repo && claude plugin install sec@Owner-Repo');
 });
+
+test('collect skips plugins with unsafe names (manifest injection defense)', async () => {
+  const CS = { items: [{ repository: { full_name: 'Owner/Repo' }, path: '.claude-plugin/marketplace.json' }] };
+  const MANIFEST = { name: 'mp', plugins: [{ name: 'good' }, { name: 'x && evil' }] };
+  const fetchJson = async (url) => url.includes('/search/code') ? CS : MANIFEST;
+  const res = await github.collect({ fetchJson, now: 't', githubToken: null });
+  assert.deepEqual(res.capabilities.map((c) => c.name), ['good']);
+});
