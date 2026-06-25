@@ -3,9 +3,13 @@ import { normalizeRepo } from '../trust.js';
 
 export const name = 'github';
 
-const CODE_SEARCH_URL =
-  'https://api.github.com/search/code?q=filename:marketplace.json+path:.claude-plugin&per_page=30';
 const REPO_CAP = 30;
+const CODE_SEARCH_URL =
+  `https://api.github.com/search/code?q=filename:marketplace.json+path:.claude-plugin&per_page=${REPO_CAP}`;
+// GitHub full_name (owner/repo) and marketplace names are interpolated into a shell-run
+// install command, so validate them before use (defense against injection from repo data).
+const SAFE_REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+const SAFE_NAME = /^[A-Za-z0-9_.@-]+$/;
 
 export function parseCodeSearch(json, cap = REPO_CAP) {
   const items = Array.isArray(json?.items) ? json.items : [];
@@ -14,10 +18,11 @@ export function parseCodeSearch(json, cap = REPO_CAP) {
   for (const it of items) {
     const fullName = it?.repository?.full_name;
     const path = it?.path;
-    if (!fullName || !path || seen.has(fullName)) continue;
+    const key = String(fullName).toLowerCase();
+    if (!fullName || !path || seen.has(key)) continue;
     const [owner, repo] = String(fullName).split('/');
     if (!owner || !repo) continue;
-    seen.add(fullName);
+    seen.add(key);
     repos.push({ owner, repo, fullName, path });
   }
   return repos.slice(0, cap);
@@ -38,10 +43,12 @@ export async function collect(ctx) {
 
   const capabilities = [];
   for (const r of parseCodeSearch(search)) {
+    if (!SAFE_REPO.test(r.fullName)) { log(`github: unsafe repo name ${r.fullName}, skipping`); continue; }
     try {
       const manifest = await fetchJson(rawManifestUrl(r));
       if (!manifest) { log(`github: no manifest for ${r.fullName}`); continue; }
-      const marketplace = manifest.name || `${r.owner}-${r.repo}`;
+      let marketplace = manifest.name || `${r.owner}-${r.repo}`;
+      if (!SAFE_NAME.test(marketplace)) { log(`github: unsafe marketplace name for ${r.fullName}, using fallback`); marketplace = `${r.owner}-${r.repo}`; }
       const caps = capabilitiesFromManifest(manifest, {
         marketplace,
         repo: normalizeRepo(r.fullName),

