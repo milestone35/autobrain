@@ -1,0 +1,9 @@
+{
+  "packages": [
+    "mcp-server-git",
+    "mcp-server-fetch",
+    "mcp-server-time",
+    "mcp-server-sqlite",
+    "awslabs.core-mcp-server"
+  ]
+}
