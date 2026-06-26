@@ -72,3 +72,31 @@ test('runScan integrates github + npm caps via injected fetchJson (candidate tie
 
   await rm(dataDir, { recursive: true, force: true });
 });
+
+test('runScan integrates mcp-registry caps via injected fetchJson (candidate tier)', async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), 'cc-scan-reg-'));
+  const trusted = path.join(dataDir, 'trusted.json');
+  await (await import('node:fs/promises')).writeFile(trusted, JSON.stringify({ sources: [] }), 'utf8');
+
+  const REG = { servers: [
+    { server: { name: 'io.github.foo/srv', description: 'd', version: '1.0.0',
+      repository: { url: 'https://github.com/foo/srv' },
+      packages: [{ registryType: 'npm', identifier: '@foo/srv' }] },
+      _meta: { 'io.modelcontextprotocol.registry/official': { isLatest: true } } }
+  ] };
+  const fetchJson = async (url) => (url.includes('registry.modelcontextprotocol.io') ? REG : null);
+
+  const map = await runScan({
+    dataDir, trustedSources: trusted,
+    officialCatalog: '/no/such/official.json', knownMarketplaces: '/no/such/known.json',
+    fetchJson, githubToken: null, now: NOW
+  });
+
+  const rc = map.capabilities.find((c) => c.source.discoveredVia === 'mcp-registry');
+  assert.ok(rc, 'mcp-registry cap present');
+  assert.equal(rc.trust, 'candidate');                 // repo present, not in trusted set
+  assert.equal(rc.install.method, 'mcp');
+  assert.equal(map.sources['mcp-registry'].count, 1);
+
+  await rm(dataDir, { recursive: true, force: true });
+});
