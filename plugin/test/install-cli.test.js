@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runInstall, pluginListed, realEnv } from '../lib/cli.js';
+import { runInstall, pluginListed, realEnv, verifyCmdFor, mcpListed, listed } from '../lib/cli.js';
 import { loadConfig } from '../lib/config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -84,4 +84,24 @@ test('realEnv.approve gates strictly on approvedIds (autonomy boundary wiring)',
   const env = realEnv(new Set(['mp::c::skill::ok']), () => {});
   assert.equal(await env.approve({ id: 'mp::c::skill::ok' }), true);
   assert.equal(await env.approve({ id: 'mp::c::skill::nope' }), false);
+});
+
+test('verifyCmdFor maps install method to the right list command', () => {
+  assert.equal(verifyCmdFor('plugin'), 'claude plugin list');
+  assert.equal(verifyCmdFor('mcp'), 'claude mcp list');
+  assert.equal(verifyCmdFor('other'), null);          // unknown -> trust exit code
+});
+
+test('mcpListed matches the registered mcp name from the add command, collision-safe', () => {
+  const item = { command: 'claude mcp add my-server -- npx -y @scope/pkg' };
+  assert.equal(mcpListed('my-server  npx ...\n', item), true);
+  assert.equal(mcpListed('my-server-extra\n', item), false);   // word boundary, no substring collision
+  assert.equal(mcpListed('something-else', item), false);
+});
+
+test('listed dispatches by method (mcp vs plugin)', () => {
+  const mcpItem = { method: 'mcp', command: 'claude mcp add srv -- npx -y p' };
+  const pluginItem = { method: 'plugin', id: 'mp::api-sec::skill::x' };
+  assert.equal(listed('mcp', 'srv\n', mcpItem), true);
+  assert.equal(listed('plugin', 'api-sec@mp\n', pluginItem), true);
 });

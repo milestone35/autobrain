@@ -12,7 +12,7 @@ function cap(id, trust, command = `claude plugin install ${id}`) {
 test('planInstalls marks trusted as auto when autoInstall is on', () => {
   const map = mapWith([cap('mp::p::skill::a', 'trusted')]);
   const plan = planInstalls({ installs: ['mp::p::skill::a'] }, map, { autoInstall: true });
-  assert.deepEqual(plan, [{ id: 'mp::p::skill::a', command: 'claude plugin install mp::p::skill::a', trust: 'trusted', mode: 'auto' }]);
+  assert.deepEqual(plan, [{ id: 'mp::p::skill::a', command: 'claude plugin install mp::p::skill::a', trust: 'trusted', mode: 'auto', method: 'plugin' }]);
 });
 
 test('planInstalls marks trusted as skip when autoInstall is off', () => {
@@ -126,4 +126,13 @@ test('planInstalls skips builtin capabilities (install:null => not runnable)', (
   const decision = { installs: ['builtin::core::bang::shell', 'mp::p::skill::s'] };
   const plan = planInstalls(decision, map, { autoInstall: true });
   assert.deepEqual(plan.map((p) => p.id), ['mp::p::skill::s']);  // builtin absent
+});
+
+test('planInstalls carries install.method (mcp vs plugin)', () => {
+  const map = { capabilities: [
+    { id: 'npm::x::mcp', trust: 'candidate', install: { method: 'mcp', command: 'claude mcp add x -- npx -y x' } },
+    { id: 'mp::p::skill::a', trust: 'trusted', install: { method: 'plugin', command: 'claude plugin install p@mp' } }
+  ] };
+  const plan = planInstalls({ installs: ['npm::x::mcp', 'mp::p::skill::a'] }, map, { autoInstall: true });
+  assert.deepEqual(plan.map((p) => p.method), ['mcp', 'plugin']);
 });

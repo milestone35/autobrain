@@ -10,7 +10,7 @@ export function planInstalls(decision, map, { autoInstall = true } = {}) {
     const mode = cap.trust === 'trusted'
       ? (autoInstall ? 'auto' : 'skip')
       : 'approval';                           // candidate | unknown
-    plan.push({ id, command, trust: cap.trust, mode });
+    plan.push({ id, command, trust: cap.trust, mode, method: cap.install?.method ?? 'plugin' });
   }
   return plan;
 }

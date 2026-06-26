@@ -101,9 +101,28 @@ export function pluginListed(listText, id) {
   return new RegExp(`(^|[^\\w-])${escapeRegex(plugin)}([^\\w-]|$)`).test(text);
 }
 
-async function probePluginList() {
+export function verifyCmdFor(method) {
+  if (method === 'plugin') return 'claude plugin list';
+  if (method === 'mcp') return 'claude mcp list';
+  return null;                                   // unknown -> trust exit code
+}
+
+// The mcp server is registered under the name in `claude mcp add <name> -- ...`,
+// so verify by matching that name (not the package) in `claude mcp list`.
+export function mcpListed(listText, item) {
+  const m = String(item?.command || '').match(/mcp add\s+(\S+)/);
+  const nameTok = m ? m[1] : '';
+  if (!nameTok) return false;
+  return new RegExp(`(^|[^\\w-])${escapeRegex(nameTok)}([^\\w-]|$)`).test(String(listText));
+}
+
+export function listed(method, listText, item) {
+  return method === 'mcp' ? mcpListed(listText, item) : pluginListed(listText, item.id);
+}
+
+async function probeList(cmd) {
   try {
-    const { stdout } = await pexec('claude plugin list');
+    const { stdout } = await pexec(cmd);
     return { ok: true, text: stdout };
   } catch {
     return { ok: false, text: '' };
@@ -117,13 +136,17 @@ export function realEnv(approvedIds, log) {
   return {
     run: async (command) => { await pexec(command); },
     isInstalled: async (item) => {
-      const p = await probePluginList();
-      return p.ok && pluginListed(p.text, item.id);
+      const cmd = verifyCmdFor(item.method);
+      if (!cmd) return false;                       // unknown method -> attempt install
+      const p = await probeList(cmd);
+      return p.ok && listed(item.method, p.text, item);
     },
     verify: async (item) => {
-      const p = await probePluginList();
-      if (!p.ok) { log('uyarı: kurulum doğrulanamadı (claude plugin list yok) — exit-code güveniliyor'); return true; }
-      return pluginListed(p.text, item.id);
+      const cmd = verifyCmdFor(item.method);
+      if (!cmd) { log('uyarı: bilinmeyen kurulum yöntemi — exit-code güveniliyor'); return true; }
+      const p = await probeList(cmd);
+      if (!p.ok) { log('uyarı: kurulum doğrulanamadı (list komutu yok) — exit-code güveniliyor'); return true; }
+      return listed(item.method, p.text, item);
     },
     approve: async (item) => approvedIds.has(item.id),
     log
