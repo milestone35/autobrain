@@ -107,8 +107,8 @@ test('merges a pypi cap and an mcp-registry cap that install the same pypi packa
   };
   for (const input of [[pypiCap, regCap], [regCap, pypiCap]]) {
     const out = dedupeCapabilities(input);
-    assert.equal(out.length, 1);
-    assert.equal(out[0].id, 'mcp-registry::io.github.x/git::mcp');
+    assert.equal(out.length, 1);                                   // both commands use uvx -> same ecosystem key pypi:mcp-server-git
+    assert.equal(out[0].id, 'mcp-registry::io.github.x/git::mcp');  // registry rank 3 beats pypi rank 5
     assert.deepEqual(out[0].keywords, ['git', 'mcp']);
   }
 });
