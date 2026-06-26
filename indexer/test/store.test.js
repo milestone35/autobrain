@@ -78,3 +78,10 @@ test('writeScanState then readScanState round-trips', async () => {
   assert.equal((await readScanState(file)).sources.official.ok, true);
   await rm(dir, { recursive: true, force: true });
 });
+
+test('resolvePaths exposes pypiSeeds (default under config, overridable)', () => {
+  const def = resolvePaths({ home: '/H', dataDir: '/D' });
+  assert.ok(def.sourcePaths.pypiSeeds.endsWith(path.join('config', 'pypi-seeds.json')));
+  const over = resolvePaths({ home: '/H', dataDir: '/D', pypiSeeds: '/X/seeds.json' });
+  assert.equal(over.sourcePaths.pypiSeeds, '/X/seeds.json');
+});

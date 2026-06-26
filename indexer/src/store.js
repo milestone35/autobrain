@@ -40,7 +40,8 @@ export function resolvePaths(opts = {}) {
     trustedSources: opts.trustedSources || path.join(INDEXER_ROOT, 'config', 'trusted-sources.json'),
     sourcePaths: {
       officialCatalog: opts.officialCatalog || path.join(pluginsDir, 'plugin-catalog-cache.json'),
-      knownMarketplaces: opts.knownMarketplaces || path.join(pluginsDir, 'known_marketplaces.json')
+      knownMarketplaces: opts.knownMarketplaces || path.join(pluginsDir, 'known_marketplaces.json'),
+      pypiSeeds: opts.pypiSeeds || path.join(INDEXER_ROOT, 'config', 'pypi-seeds.json')
     }
   };
 }
