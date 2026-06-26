@@ -41,6 +41,16 @@ test('parseNpmSearch emits candidate mcp caps for likely servers only', () => {
   assert.equal(c.install.command, 'claude mcp add cool-mcp-server -- npx -y cool-mcp-server');
 });
 
+test('scoped package gets a specific server name (scope folded in, not bare last segment)', () => {
+  // @ai-sdk/mcp must NOT register as the generic name "mcp" (which collides with
+  // "claude mcp list" empty-state text); fold the scope into the name.
+  const json = { objects: [{ package: { name: '@ai-sdk/mcp', description: 'd', keywords: ['mcp', 'server'] } }] };
+  const caps = npm.parseNpmSearch(json, { now: NOW });
+  assert.equal(caps.length, 1);
+  assert.equal(caps[0].install.command, 'claude mcp add ai-sdk-mcp -- npx -y @ai-sdk/mcp');
+  assert.equal(caps[0].install.package, '@ai-sdk/mcp');   // package keeps the full scoped id
+});
+
 test('parseNpmSearch skips packages with unsafe names (injection defense)', () => {
   const json = { objects: [
     { package: { name: 'good-mcp', description: 'd', keywords: ['mcp', 'server'] } },

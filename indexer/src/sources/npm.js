@@ -25,9 +25,15 @@ export function extractRepo(pkg) {
   return m ? normalizeRepo(`${m[1]}/${m[2]}`) : null;
 }
 
+// Derive the mcp server name registered via `claude mcp add <name>`. Fold the whole
+// package id (scope included) into the name so scoped packages whose last segment is
+// generic (e.g. @ai-sdk/mcp) don't register as a bare collision-prone token like "mcp".
 function shortName(pkgName) {
-  const base = String(pkgName).split('/').pop() || String(pkgName);
-  return base.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'mcp';
+  const cleaned = String(pkgName)
+    .replace(/^@/, '')                  // drop the scope's leading @
+    .replace(/[^a-zA-Z0-9]+/g, '-')     // slashes & punctuation -> -
+    .replace(/^-+|-+$/g, '');
+  return cleaned || 'mcp';
 }
 
 export function parseNpmSearch(json, { now, cap = PKG_CAP } = {}) {

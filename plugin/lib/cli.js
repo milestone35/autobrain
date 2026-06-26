@@ -110,10 +110,12 @@ export function verifyCmdFor(method) {
 // The mcp server is registered under the name in `claude mcp add <name> -- ...`,
 // so verify by matching that name (not the package) in `claude mcp list`.
 export function mcpListed(listText, item) {
+  const text = String(listText);
+  if (/no\s+mcp\s+servers/i.test(text)) return false;   // empty-state help text, nothing configured
   const m = String(item?.command || '').match(/mcp add\s+(\S+)/);
   const nameTok = m ? m[1] : '';
   if (!nameTok) return false;
-  return new RegExp(`(^|[^\\w-])${escapeRegex(nameTok)}([^\\w-]|$)`).test(String(listText));
+  return new RegExp(`(^|[^\\w-])${escapeRegex(nameTok)}([^\\w-]|$)`).test(text);
 }
 
 export function listed(method, listText, item) {

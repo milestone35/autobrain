@@ -99,6 +99,13 @@ test('mcpListed matches the registered mcp name from the add command, collision-
   assert.equal(mcpListed('something-else', item), false);
 });
 
+test('mcpListed treats the "no servers configured" empty-state as not-installed', () => {
+  // Regression: a generic server name (e.g. "mcp") must not match the empty-state
+  // help text "No MCP servers configured. Use `claude mcp add` ...".
+  const item = { command: 'claude mcp add mcp -- npx -y @ai-sdk/mcp' };
+  assert.equal(mcpListed('No MCP servers configured. Use `claude mcp add` to add a server.', item), false);
+});
+
 test('listed dispatches by method (mcp vs plugin)', () => {
   const mcpItem = { method: 'mcp', command: 'claude mcp add srv -- npx -y p' };
   const pluginItem = { method: 'plugin', id: 'mp::api-sec::skill::x' };
