@@ -42,10 +42,25 @@ function mergeCap(a, b) {
 }
 
 export function dedupeCapabilities(caps) {
+  // Pass 1: merge exact-id duplicates (the same capability seen from multiple sources).
   const byId = new Map();
   for (const c of caps) {
     const existing = byId.get(c.id);
     byId.set(c.id, existing ? mergeCap(existing, c) : c);
   }
-  return [...byId.values()].sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
+  // Pass 2: merge MCP servers that install the same package across sources — e.g. an npm
+  // package found by the npm search AND listed in the MCP registry. These carry different
+  // ids (marketplace + name differ), so Pass 1 cannot catch them. mergeCap keeps the
+  // higher-priority source (mcp-registry rank 3 beats npm rank 4) and unions keywords.
+  // Caps without an install package (remote-only servers, all non-mcp caps) pass through.
+  const byPkg = new Map();
+  const out = [];
+  for (const c of byId.values()) {
+    const key = c.kind === 'mcp' && c.install?.package ? c.install.package : null;
+    if (!key) { out.push(c); continue; }
+    const existing = byPkg.get(key);
+    byPkg.set(key, existing ? mergeCap(existing, c) : c);
+  }
+  for (const c of byPkg.values()) out.push(c);
+  return out.sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
 }

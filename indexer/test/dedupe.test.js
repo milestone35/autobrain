@@ -40,3 +40,44 @@ test('description tie-break is order-independent for equal-length descriptions',
   assert.equal(ab.description, ba.description);
   assert.equal(ab.description, 'aaa'); // lexically smaller wins, deterministically
 });
+
+test('merges mcp caps that install the same package across sources (registry wins)', () => {
+  const npmCap = {
+    id: 'npm::@foo/srv::mcp', kind: 'mcp', name: '@foo/srv', description: 'npm desc',
+    keywords: ['a'], source: { marketplace: 'npm', repo: 'github:foo/srv', discoveredVia: 'npm' },
+    install: { method: 'mcp', command: 'claude mcp add foo-srv -- npx -y @foo/srv', package: '@foo/srv' },
+    trust: null, cost: null, popularity: {}, lastSeen: '2026-01-01T00:00:00Z'
+  };
+  const regCap = {
+    id: 'mcp-registry::io.github.foo/srv::mcp', kind: 'mcp', name: 'io.github.foo/srv',
+    description: 'a much longer registry description', keywords: ['b'],
+    source: { marketplace: 'mcp-registry', repo: 'github:foo/srv', discoveredVia: 'mcp-registry' },
+    install: { method: 'mcp', command: 'claude mcp add io-github-foo-srv -- npx -y @foo/srv', package: '@foo/srv' },
+    trust: null, cost: null, popularity: {}, lastSeen: '2026-02-01T00:00:00Z'
+  };
+  // order-independent: registry (rank 3) must win regardless of input order
+  for (const input of [[npmCap, regCap], [regCap, npmCap]]) {
+    const out = dedupeCapabilities(input);
+    assert.equal(out.length, 1);                                       // merged, not duplicated
+    assert.equal(out[0].id, 'mcp-registry::io.github.foo/srv::mcp');   // registry wins
+    assert.equal(out[0].install.command, 'claude mcp add io-github-foo-srv -- npx -y @foo/srv');
+    assert.deepEqual(out[0].keywords, ['a', 'b']);                     // unioned + sorted
+  }
+});
+
+test('does not merge mcp caps that install different packages', () => {
+  const a = cap({ id: 'npm::p1::mcp', kind: 'mcp', source: { marketplace: 'npm', repo: null, discoveredVia: 'npm' }, install: { method: 'mcp', command: 'x', package: 'p1' } });
+  const b = cap({ id: 'mcp-registry::p2::mcp', kind: 'mcp', source: { marketplace: 'mcp-registry', repo: null, discoveredVia: 'mcp-registry' }, install: { method: 'mcp', command: 'y', package: 'p2' } });
+  assert.equal(dedupeCapabilities([a, b]).length, 2);
+});
+
+test('does not merge remote mcp caps (install.package null) sharing nothing', () => {
+  const a = cap({ id: 'mcp-registry::r1::mcp', kind: 'mcp', source: { marketplace: 'mcp-registry', repo: null, discoveredVia: 'mcp-registry' }, install: { method: 'mcp', command: 'claude mcp add r1 --transport http r1 https://a', package: null } });
+  const b = cap({ id: 'mcp-registry::r2::mcp', kind: 'mcp', source: { marketplace: 'mcp-registry', repo: null, discoveredVia: 'mcp-registry' }, install: { method: 'mcp', command: 'claude mcp add r2 --transport http r2 https://b', package: null } });
+  assert.equal(dedupeCapabilities([a, b]).length, 2);
+});
+
+test('non-mcp caps with no package are unaffected by the package pass', () => {
+  const out = dedupeCapabilities([cap({ id: 'z' }), cap({ id: 'a' })]);
+  assert.deepEqual(out.map((c) => c.id), ['a', 'z']);   // still kept + sorted
+});
