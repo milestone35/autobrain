@@ -1,4 +1,5 @@
 import { sources } from './sources/index.js';
+import { makeFetchJson } from './http.js';
 import { dedupeCapabilities } from './dedupe.js';
 import { loadTrustedSet, applyTrust } from './trust.js';
 import {
@@ -10,13 +11,15 @@ export async function runScan(opts = {}) {
   const paths = resolvePaths(opts);
   const now = opts.now || new Date().toISOString();
   const log = opts.log || (() => {});
+  const fetchJson = opts.fetchJson || makeFetchJson();
+  const githubToken = opts.githubToken ?? process.env.GITHUB_TOKEN ?? null;
   const trustedSet = loadTrustedSet(await readJson(paths.trustedSources, { sources: [] }));
 
   const allCaps = [];
   const sourceSummary = {};
   for (const src of sources) {
     try {
-      const res = await src.collect({ sourcePaths: paths.sourcePaths, prevState: {}, now, log });
+      const res = await src.collect({ sourcePaths: paths.sourcePaths, prevState: {}, now, log, fetchJson, githubToken });
       for (const c of res.capabilities) allCaps.push(c);
       sourceSummary[src.name] = { ok: res.ok !== false, count: res.capabilities.length, error: res.error || null, lastRun: now };
     } catch (e) {
