@@ -81,3 +81,13 @@ test('non-mcp caps with no package are unaffected by the package pass', () => {
   const out = dedupeCapabilities([cap({ id: 'z' }), cap({ id: 'a' })]);
   assert.deepEqual(out.map((c) => c.id), ['a', 'z']);   // still kept + sorted
 });
+
+test('does not merge same-name packages across ecosystems (npm npx vs pypi uvx)', () => {
+  const npmCap = cap({ id: 'npm::redis::mcp', kind: 'mcp',
+    source: { marketplace: 'npm', repo: null, discoveredVia: 'npm' },
+    install: { method: 'mcp', command: 'claude mcp add redis -- npx -y redis', package: 'redis' } });
+  const pypiCap = cap({ id: 'mcp-registry::x.redis/srv::mcp', kind: 'mcp',
+    source: { marketplace: 'mcp-registry', repo: null, discoveredVia: 'mcp-registry' },
+    install: { method: 'mcp', command: 'claude mcp add x-redis-srv -- uvx redis', package: 'redis' } });
+  assert.equal(dedupeCapabilities([npmCap, pypiCap]).length, 2);  // different ecosystems, not merged
+});

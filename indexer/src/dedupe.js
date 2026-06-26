@@ -53,10 +53,17 @@ export function dedupeCapabilities(caps) {
   // ids (marketplace + name differ), so Pass 1 cannot catch them. mergeCap keeps the
   // higher-priority source (mcp-registry rank 3 beats npm rank 4) and unions keywords.
   // Caps without an install package (remote-only servers, all non-mcp caps) pass through.
+  // (Distinct-id caps that reach Pass 2 always differ in source rank under the current
+  // sources, so mergeCap's primary selection is order-independent here.)
   const byPkg = new Map();
   const out = [];
   for (const c of byId.values()) {
-    const key = c.kind === 'mcp' && c.install?.package ? c.install.package : null;
+    // Key by ecosystem + package so an npm package and a PyPI package that happen to
+    // share a bare name (npm/PyPI are separate namespaces) are NOT merged. Our sources
+    // encode the ecosystem in the command verb: npm -> `npx`, pypi -> `uvx`.
+    const key = c.kind === 'mcp' && c.install?.package
+      ? `${/\buvx\b/.test(c.install.command || '') ? 'pypi' : 'npm'}:${c.install.package}`
+      : null;
     if (!key) { out.push(c); continue; }
     const existing = byPkg.get(key);
     byPkg.set(key, existing ? mergeCap(existing, c) : c);
