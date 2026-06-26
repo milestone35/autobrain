@@ -7,8 +7,9 @@ const REGISTRY_URL = 'https://registry.modelcontextprotocol.io/v0/servers?limit=
 const SERVER_CAP = 100;
 const OFFICIAL_META = 'io.modelcontextprotocol.registry/official';
 // Package identifier is interpolated into a shell-run install command; validate
-// defensively (npm SAFE_PKG ile aynı, incl. @scope/name).
-const SAFE_IDENT = /^(@[A-Za-z0-9._-]+\/)?[A-Za-z0-9._-]+$/;
+// defensively (mirrors npm.js SAFE_PKG; allows @scope/name; rejects a leading dash
+// so it can't be consumed as an npx/uvx flag).
+const SAFE_IDENT = /^(@[A-Za-z0-9._-]+\/)?[A-Za-z0-9._][A-Za-z0-9._-]*$/;
 // Remote url: https only, no shell metacharacters / whitespace.
 const SAFE_URL = /^https:\/\/[^\s`'"&|;<>$()]+$/;
 

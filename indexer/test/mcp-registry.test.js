@@ -45,6 +45,7 @@ test('installFor returns null for oci-only, no-targets, and unsafe values', () =
   assert.equal(reg.installFor({ name: 'x/y' }), null);
   assert.equal(reg.installFor({ name: 'x/y', packages: [{ registryType: 'npm', identifier: 'evil && rm -rf /' }] }), null);
   assert.equal(reg.installFor({ name: 'x/y', remotes: [{ type: 'streamable-http', url: 'http://insecure.com/x' }] }), null); // not https
+  assert.equal(reg.installFor({ name: 'x/y', packages: [{ registryType: 'npm', identifier: '-rf' }] }), null); // leading-dash arg-injection
 });
 
 test('parseRegistry dedupes to latest, skips non-installable, builds candidate-shaped caps', async () => {
@@ -87,4 +88,27 @@ test('collect returns ok:false when fetchJson is not a function', async () => {
   const res = await reg.collect({ now: NOW });
   assert.equal(res.ok, false);
   assert.deepEqual(res.capabilities, []);
+});
+
+test('parseRegistry keeps latest when it appears before a non-latest duplicate', () => {
+  const json = { servers: [
+    { server: { name: 'a/b', description: 'latest', packages: [{ registryType: 'npm', identifier: 'pkg-latest' }] },
+      _meta: { 'io.modelcontextprotocol.registry/official': { isLatest: true } } },
+    { server: { name: 'a/b', description: 'old', packages: [{ registryType: 'npm', identifier: 'pkg-old' }] },
+      _meta: { 'io.modelcontextprotocol.registry/official': { isLatest: false } } }
+  ] };
+  const caps = reg.parseRegistry(json, { now: NOW });
+  assert.equal(caps.length, 1);
+  assert.equal(caps[0].description, 'latest');
+  assert.equal(caps[0].install.command, 'claude mcp add a-b -- npx -y pkg-latest');
+});
+
+test('parseRegistry keeps the first entry when no duplicate is flagged isLatest', () => {
+  const json = { servers: [
+    { server: { name: 'a/b', description: 'first', packages: [{ registryType: 'npm', identifier: 'pkg-first' }] }, _meta: {} },
+    { server: { name: 'a/b', description: 'second', packages: [{ registryType: 'npm', identifier: 'pkg-second' }] }, _meta: {} }
+  ] };
+  const caps = reg.parseRegistry(json, { now: NOW });
+  assert.equal(caps.length, 1);
+  assert.equal(caps[0].description, 'first');
 });

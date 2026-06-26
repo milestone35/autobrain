@@ -7,7 +7,7 @@ const SEARCH_URL = 'https://registry.npmjs.org/-/v1/search?text=keywords:mcp&siz
 const PKG_CAP = 50;
 // Package name is interpolated into a shell-run install command (npx -y <pkg>);
 // npm already constrains names, but validate defensively (incl. @scope/name).
-const SAFE_PKG = /^(@[A-Za-z0-9._-]+\/)?[A-Za-z0-9._-]+$/;
+const SAFE_PKG = /^(@[A-Za-z0-9._-]+\/)?[A-Za-z0-9._][A-Za-z0-9._-]*$/;
 
 export function isLikelyMcpServer(pkg) {
   const name = String(pkg?.name || '').toLowerCase();

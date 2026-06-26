@@ -72,3 +72,8 @@ test('collect returns ok:false when the search call fails', async () => {
   assert.equal(res.ok, false);
   assert.deepEqual(res.capabilities, []);
 });
+
+test('parseNpmSearch skips identifiers beginning with a dash (arg-injection defense)', () => {
+  const json = { objects: [{ package: { name: '-rf', description: 'd', keywords: ['mcp', 'server'] } }] };
+  assert.deepEqual(npm.parseNpmSearch(json, { now: NOW }), []);
+});
