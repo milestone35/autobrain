@@ -107,13 +107,31 @@ export function verifyCmdFor(method) {
   return null;                                   // unknown -> trust exit code
 }
 
-// The mcp server is registered under the name in `claude mcp add <name> -- ...`,
+// Extract the server name from a `claude mcp add` command. The name follows any
+// options: `claude mcp add [--transport http] <name> <cmdOrUrl> [-- ...]`. Skip the
+// `--flag` (and its value, e.g. `--transport http`) and return the first plain token.
+export function mcpAddName(command) {
+  const after = String(command).split(/mcp add\s+/)[1];
+  if (!after) return '';
+  const toks = after.trim().split(/\s+/);
+  for (let i = 0; i < toks.length; i++) {
+    const t = toks[i];
+    if (t === '--') break;                       // '--' starts the run command; name must precede it
+    if (t.startsWith('-')) {
+      if (t === '--transport') i++;              // skip the flag's value (http/sse)
+      continue;
+    }
+    return t;                                     // first plain token = server name
+  }
+  return '';
+}
+
+// The mcp server is registered under the name in `claude mcp add <name> ...`,
 // so verify by matching that name (not the package) in `claude mcp list`.
 export function mcpListed(listText, item) {
   const text = String(listText);
   if (/no\s+mcp\s+servers/i.test(text)) return false;   // empty-state help text, nothing configured
-  const m = String(item?.command || '').match(/mcp add\s+(\S+)/);
-  const nameTok = m ? m[1] : '';
+  const nameTok = mcpAddName(item?.command || '');
   if (!nameTok) return false;
   return new RegExp(`(^|[^\\w-])${escapeRegex(nameTok)}([^\\w-]|$)`).test(text);
 }

@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runInstall, pluginListed, realEnv, verifyCmdFor, mcpListed, listed } from '../lib/cli.js';
+import { runInstall, pluginListed, realEnv, verifyCmdFor, mcpListed, listed, mcpAddName } from '../lib/cli.js';
 import { loadConfig } from '../lib/config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -111,4 +111,19 @@ test('listed dispatches by method (mcp vs plugin)', () => {
   const pluginItem = { method: 'plugin', id: 'mp::api-sec::skill::x' };
   assert.equal(listed('mcp', 'srv\n', mcpItem), true);
   assert.equal(listed('plugin', 'api-sec@mp\n', pluginItem), true);
+});
+
+test('mcpAddName extracts the server name from both command forms', () => {
+  assert.equal(mcpAddName('claude mcp add my-server -- npx -y @scope/pkg'), 'my-server');
+  assert.equal(mcpAddName('claude mcp add ai-adeu-adeu -- uvx adeu'), 'ai-adeu-adeu');
+  assert.equal(mcpAddName('claude mcp add --transport http my-remote https://x.com/mcp'), 'my-remote');
+  assert.equal(mcpAddName('claude mcp add --transport sse my-sse https://x.com/sse'), 'my-sse');
+  assert.equal(mcpAddName('claude plugin install p@mp'), '');   // not an mcp add command
+});
+
+test('mcpListed matches a remote-form server name (flags before the name)', () => {
+  const item = { command: 'claude mcp add --transport http my-remote https://x.com/mcp' };
+  assert.equal(mcpListed('my-remote  https://x.com/mcp  ✓\n', item), true);
+  assert.equal(mcpListed('my-remote-extra\n', item), false);    // word boundary, no substring collision
+  assert.equal(mcpListed('No MCP servers configured.', item), false);  // empty-state guard preserved
 });
