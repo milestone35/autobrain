@@ -100,3 +100,31 @@ test('runScan integrates mcp-registry caps via injected fetchJson (candidate tie
 
   await rm(dataDir, { recursive: true, force: true });
 });
+
+test('runScan integrates pypi caps via injected fetchJson + seed file (candidate tier)', async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), 'cc-scan-pypi-'));
+  const trusted = path.join(dataDir, 'trusted.json');
+  const seeds = path.join(dataDir, 'pypi-seeds.json');
+  const fs = await import('node:fs/promises');
+  await fs.writeFile(trusted, JSON.stringify({ sources: [] }), 'utf8');
+  await fs.writeFile(seeds, JSON.stringify({ packages: ['mcp-server-git'] }), 'utf8');
+
+  const PKG = { info: { name: 'mcp-server-git', summary: 'Git MCP', keywords: 'git, mcp',
+    project_urls: { Repository: 'https://github.com/foo/git-mcp' } } };
+  const fetchJson = async (url) => (url.includes('pypi.org/pypi/mcp-server-git/') ? PKG : null);
+
+  const map = await runScan({
+    dataDir, trustedSources: trusted, pypiSeeds: seeds,
+    officialCatalog: '/no/such/official.json', knownMarketplaces: '/no/such/known.json',
+    fetchJson, githubToken: null, now: NOW
+  });
+
+  const pc = map.capabilities.find((c) => c.source.discoveredVia === 'pypi');
+  assert.ok(pc, 'pypi cap present');
+  assert.equal(pc.trust, 'candidate');
+  assert.equal(pc.install.method, 'mcp');
+  assert.equal(pc.install.command, 'claude mcp add mcp-server-git -- uvx mcp-server-git');
+  assert.equal(map.sources.pypi.count, 1);
+
+  await rm(dataDir, { recursive: true, force: true });
+});

@@ -91,3 +91,24 @@ test('does not merge same-name packages across ecosystems (npm npx vs pypi uvx)'
     install: { method: 'mcp', command: 'claude mcp add x-redis-srv -- uvx redis', package: 'redis' } });
   assert.equal(dedupeCapabilities([npmCap, pypiCap]).length, 2);  // different ecosystems, not merged
 });
+
+test('merges a pypi cap and an mcp-registry cap that install the same pypi package (registry wins)', () => {
+  const pypiCap = {
+    id: 'pypi::mcp-server-git::mcp', kind: 'mcp', name: 'mcp-server-git', description: 'pypi desc',
+    keywords: ['git'], source: { marketplace: 'pypi', repo: null, discoveredVia: 'pypi' },
+    install: { method: 'mcp', command: 'claude mcp add mcp-server-git -- uvx mcp-server-git', package: 'mcp-server-git' },
+    trust: null, cost: null, popularity: {}, lastSeen: '2026-01-01T00:00:00Z'
+  };
+  const regCap = {
+    id: 'mcp-registry::io.github.x/git::mcp', kind: 'mcp', name: 'io.github.x/git', description: 'registry desc longer',
+    keywords: ['mcp'], source: { marketplace: 'mcp-registry', repo: 'github:x/git', discoveredVia: 'mcp-registry' },
+    install: { method: 'mcp', command: 'claude mcp add io-github-x-git -- uvx mcp-server-git', package: 'mcp-server-git' },
+    trust: null, cost: null, popularity: {}, lastSeen: '2026-02-01T00:00:00Z'
+  };
+  for (const input of [[pypiCap, regCap], [regCap, pypiCap]]) {
+    const out = dedupeCapabilities(input);
+    assert.equal(out.length, 1);
+    assert.equal(out[0].id, 'mcp-registry::io.github.x/git::mcp');
+    assert.deepEqual(out[0].keywords, ['git', 'mcp']);
+  }
+});
