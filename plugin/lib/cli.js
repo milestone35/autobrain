@@ -108,8 +108,14 @@ export function verifyCmdFor(method) {
 }
 
 // Extract the server name from a `claude mcp add` command. The name follows any
-// options: `claude mcp add [--transport http] <name> <cmdOrUrl> [-- ...]`. Skip the
-// `--flag` (and its value, e.g. `--transport http`) and return the first plain token.
+// options: `claude mcp add [--transport http] <name> <cmdOrUrl> [-- ...]`. Skip each
+// `--flag` (and the value of `--transport`) and return the first plain token.
+// ASSUMPTION: `--transport` is the only value-taking flag our sources emit (see the
+// `claude mcp add` commands built in indexer mcp-registry.js installFor / npm.js). If a
+// source starts emitting another valued flag (e.g. --scope/--header/--env), teach this
+// skip about it too, otherwise that flag's value would be mistaken for the name. The
+// function fails closed (returns '') on malformed input, so a miss only causes a
+// re-install attempt, never a false "already-installed".
 export function mcpAddName(command) {
   const after = String(command).split(/mcp add\s+/)[1];
   if (!after) return '';

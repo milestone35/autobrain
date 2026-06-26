@@ -119,6 +119,8 @@ test('mcpAddName extracts the server name from both command forms', () => {
   assert.equal(mcpAddName('claude mcp add --transport http my-remote https://x.com/mcp'), 'my-remote');
   assert.equal(mcpAddName('claude mcp add --transport sse my-sse https://x.com/sse'), 'my-sse');
   assert.equal(mcpAddName('claude plugin install p@mp'), '');   // not an mcp add command
+  assert.equal(mcpAddName('claude mcp add --transport'), '');   // trailing valued flag, no name -> fail closed
+  assert.equal(mcpAddName('not even close'), '');               // no `mcp add` -> fail closed
 });
 
 test('mcpListed matches a remote-form server name (flags before the name)', () => {
