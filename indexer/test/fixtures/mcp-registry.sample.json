@@ -1,0 +1,81 @@
+{
+  "servers": [
+    {
+      "server": {
+        "name": "io.github.foo/npm-srv",
+        "description": "An npm MCP server",
+        "title": "NPM Srv",
+        "version": "1.0.0",
+        "repository": { "url": "https://github.com/foo/npm-srv", "source": "github" },
+        "packages": [{ "registryType": "npm", "identifier": "@foo/npm-srv", "version": "1.0.0", "transport": { "type": "stdio" } }]
+      },
+      "_meta": { "io.modelcontextprotocol.registry/official": { "status": "active", "isLatest": false } }
+    },
+    {
+      "server": {
+        "name": "io.github.foo/npm-srv",
+        "description": "An npm MCP server (newer)",
+        "title": "NPM Srv",
+        "version": "2.0.0",
+        "repository": { "url": "https://github.com/foo/npm-srv", "source": "github" },
+        "packages": [{ "registryType": "npm", "identifier": "@foo/npm-srv", "version": "2.0.0", "transport": { "type": "stdio" } }]
+      },
+      "_meta": { "io.modelcontextprotocol.registry/official": { "status": "active", "isLatest": true } }
+    },
+    {
+      "server": {
+        "name": "ai.adeu/adeu",
+        "description": "A pypi MCP server",
+        "version": "1.5.2",
+        "repository": { "url": "https://github.com/dealfluence/adeu", "source": "github" },
+        "packages": [{ "registryType": "pypi", "identifier": "adeu", "version": "1.5.2", "transport": { "type": "stdio" } }]
+      },
+      "_meta": { "io.modelcontextprotocol.registry/official": { "status": "active", "isLatest": true } }
+    },
+    {
+      "server": {
+        "name": "ac.inference.sh/mcp",
+        "description": "A remote http MCP server",
+        "version": "1.0.1",
+        "remotes": [{ "type": "streamable-http", "url": "https://api.inference.sh/mcp" }]
+      },
+      "_meta": { "io.modelcontextprotocol.registry/official": { "status": "active", "isLatest": true } }
+    },
+    {
+      "server": {
+        "name": "com.example/sse-srv",
+        "description": "A remote sse MCP server",
+        "version": "1.0.0",
+        "remotes": [{ "type": "sse", "url": "https://example.com/sse" }]
+      },
+      "_meta": { "io.modelcontextprotocol.registry/official": { "status": "active", "isLatest": true } }
+    },
+    {
+      "server": {
+        "name": "com.example/oci-only",
+        "description": "Docker only, not installable by us",
+        "version": "1.0.0",
+        "packages": [{ "registryType": "oci", "identifier": "example/img", "version": "1.0.0" }]
+      },
+      "_meta": { "io.modelcontextprotocol.registry/official": { "status": "active", "isLatest": true } }
+    },
+    {
+      "server": {
+        "name": "com.example/no-targets",
+        "description": "No packages and no remotes",
+        "version": "1.0.0"
+      },
+      "_meta": { "io.modelcontextprotocol.registry/official": { "status": "active", "isLatest": true } }
+    },
+    {
+      "server": {
+        "name": "com.evil/injection",
+        "description": "Unsafe identifier",
+        "version": "1.0.0",
+        "packages": [{ "registryType": "npm", "identifier": "evil && rm -rf /", "version": "1.0.0", "transport": { "type": "stdio" } }]
+      },
+      "_meta": { "io.modelcontextprotocol.registry/official": { "status": "active", "isLatest": true } }
+    }
+  ],
+  "metadata": { "nextCursor": "x", "count": 8 }
+}
