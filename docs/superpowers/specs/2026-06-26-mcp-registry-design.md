@@ -114,7 +114,7 @@ runScan → ctx.fetchJson = makeFetchJson(globalThis.fetch)
 ```
 REGISTRY_URL = 'https://registry.modelcontextprotocol.io/v0/servers?limit=100'
 SERVER_CAP   = 100
-SAFE_IDENT   = /^(@[A-Za-z0-9._-]+\/)?[A-Za-z0-9._-]+$/   // npm SAFE_PKG ile aynı (paket id)
+SAFE_IDENT   = /^(@[A-Za-z0-9._-]+\/)?[A-Za-z0-9._][A-Za-z0-9._-]*$/   // npm SAFE_PKG ile aynı (paket id; baştaki '-' reddedilir → arg-injection savunması)
 SAFE_URL     = /^https:\/\/[^\s`'"&|;<>$()]+$/             // remote url; shell-meta yok, sadece https
 ```
 
