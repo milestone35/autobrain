@@ -1,6 +1,7 @@
 {
   "name": "autobrain",
   "owner": { "name": "harun.hanbay" },
+  "description": "autobrain — routes each prompt to the best capability; a council decides, installs trusted capabilities, and executes.",
   "plugins": [
     {
       "name": "autobrain",

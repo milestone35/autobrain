@@ -1,5 +1,10 @@
 {
   "name": "autobrain",
   "description": "Routes each prompt to the best capabilities from the autobrain capability map (passive candidate hints).",
+  "author": { "name": "harun.hanbay" },
+  "license": "MIT",
+  "homepage": "https://github.com/milestone35/autobrain",
+  "repository": "https://github.com/milestone35/autobrain",
+  "keywords": ["claude-code", "plugin", "capability-router", "automation", "mcp", "router"],
   "hooks": "./hooks/hooks.json"
 }
