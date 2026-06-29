@@ -16,8 +16,8 @@ sources (GitHub, npm, the MCP registry, PyPI) into a unified **capability map** 
 cc-autopilot is a Claude Code plugin, distributed via this repository's marketplace.
 
 ```bash
-# Add this repo as a plugin marketplace (replace <github-user> with the repo owner)
-/plugin marketplace add <github-user>/cc-autopilot
+# Add this repo as a plugin marketplace
+/plugin marketplace add milestone35/autobrain
 # Install the plugin
 /plugin install cc-autopilot@cc-autopilot
 ```
