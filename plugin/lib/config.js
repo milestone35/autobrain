@@ -1,6 +1,6 @@
 export const DEFAULTS = Object.freeze({
   enabled: true,
-  mapSource: '../indexer/data/capability-map.json',
+  mapSource: './data/capability-map.json',
   topN: 5,
   scoreFloor: 0,
   staleDays: 14,
