@@ -12,12 +12,24 @@ You orchestrate a small council to decide, autonomously, which capabilities (if 
 - `REQUEST`: the user's request text (the `/route` argument, or the current task).
 - `PLUGIN_ROOT`: the plugin directory (`${CLAUDE_PLUGIN_ROOT}` when run as an installed plugin; otherwise the `plugin/` dir of this repo).
 
+## Progress narration (Turkish — REQUIRED)
+All user-facing progress and summaries MUST be written in **Turkish**. At the start emit ONE intro line stating the skill is active plus the total map size and installed count; at each main step below emit ONE short Turkish progress line; at the very end emit one consolidated summary block. Do NOT dump raw CLI output — summarize it in your own words. (The CLI's own output lines are already Turkish; this rule pins YOUR narration to Turkish too.) Narration templates (wording need not be verbatim) are given inline at each step under "Anlat:".
+
 ## Step 1 — Gather candidates (deterministic)
 Run the command below, **substituting the actual REQUEST text for the placeholder** (do not pass the literal word "REQUEST"); keep the quotes:
 ```bash
 node "$PLUGIN_ROOT/lib/cli.js" candidates "<REQUEST text here>"
 ```
 Parse the JSON. If `candidates` is empty (or an `error` is present), STOP and report decision `no_capability_needed` (nothing to route to). Do not run the council.
+
+Parse `mapTotal` (the full capability-map size) and `candidates.length` from the JSON. Then run the installed-inventory command once and parse its JSON `{ "plugins", "mcp", "total" }`:
+```bash
+node "$PLUGIN_ROOT/lib/cli.js" installed
+```
+**Anlat (intro — skill devrede):** `🟢 cc-autopilot devrede — toplam harita: <mapTotal> yetenek, kurulu: <installed.total>.`
+**Anlat (adaylar):** `🔎 <candidates.length> aday buldum.`
+If `candidates` is empty: `🔎 Bu istek için uygun aday yok — varsayılan davranışla devam ediyorum.`
+Remember `mapTotal`, `installed.total` and the candidate count — the final summary (Step 8) reuses them.
 
 ## Step 2 — Planner subagent (Task tool)
 Dispatch ONE subagent (general-purpose). Give it ONLY: the REQUEST and the JSON candidate list. Instruct it to return strict JSON:
@@ -57,8 +69,15 @@ node "$PLUGIN_ROOT/lib/cli.js" decide "$PLUGIN_ROOT/.decision.tmp.json"
 ```
 This normalizes the decision: it enforces the confidence threshold (low confidence -> `no_capability_needed`), strips ids not in the map, and clears nonsensical install lists. The **last non-empty line** of the command's output is the canonical decision JSON — parse that and treat it as the FINAL decision (it overrides your synthesis); the lines above it are just a human-readable summary.
 
+**Anlat:** `🧠 Konsey kararı: <decision> — yetenek(ler): <id'ler> (gerekçe: <kısa>).`
+For `no_capability_needed`: `🧠 Özel yetenek gerekmiyor — varsayılan davranışla devam ediyorum.`
+
 ## Step 7 — Present and (if needed) install
-Report the final decision: the `decision`, chosen `capabilities`, `method`, and `rationale`.
+Report the final decision in Turkish: the `decision`, chosen `capabilities`, `method`, and `rationale`.
+
+**Anlat (kurulumdan sonra):** `📦 <kurulan sayısı> kuruldu, <atlanan/zaten var sayısı> atlandı.`
+If any are `needs-approval`: `⏳ <sayı> yetenek onay bekliyor.` and ask the approval question in Turkish.
+If any `failed`: `⚠️ <sayı> yetenek kurulamadı — o yetenek olmadan devam ediyorum.`
 
 If the decision is `install_then_use`, run the installer over the same decision file:
 ```bash
@@ -96,7 +115,13 @@ Parse the **last non-empty line** (canonical JSON `{ "decision": ..., "steps": [
     node "$PLUGIN_ROOT/lib/cli.js" execute "$PLUGIN_ROOT/.decision.tmp.json" --approved <comma,separated,ids>
     ```
   - If declined: skip those steps and say so.
-- Report what was executed, what was skipped, and any errors.
+- **Anlat (yürütmeye başlarken):** `▶️ Bunları kullanarak başlıyorum: <yöntem>.` For side-effecting steps, ask the approval question in Turkish (show the exact command).
+- Report what was executed, what was skipped, and any errors — in Turkish.
+- **Final toplu özet** (akışın en sonunda, tek blok; Step 1'deki sayıları, `mapTotal` ve `installed.total`'ı kullan):
+  ```
+  Özet: <aday sayısı> aday bulundu, <kurulan sayısı> kuruldu, toplam harita <mapTotal> yetenek, kurulu <installed.total>.
+  <ne ile başlandığı / sonuç>.
+  ```
 
 **Fail-soft:** if `execute` errors or the plan is unusable, do NOT break the user's task — fall back to your normal behavior and say so. A single step's failure does not abort the rest; continue and summarize at the end.
 
