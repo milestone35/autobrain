@@ -3,7 +3,8 @@
 The council is LLM-driven, so it is verified by hand (not `node --test`). Run each scenario in a
 Claude Code session with the plugin active, then record the result.
 
-Prereq: a built map at `mapSource` (`cd ../indexer && npm run scan`).
+Prereq: a capability map at `mapSource`. The plugin ships with an embedded `data/capability-map.json`,
+so this is satisfied out of the box; the indexer (`cd ../indexer && npm run scan`) is only needed to refresh it.
 
 ## Scenario A — capability genuinely helps -> use_existing
 Command: `/route audit my OpenAPI spec for security vulnerabilities`

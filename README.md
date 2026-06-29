@@ -5,8 +5,9 @@ which skill, agent, MCP server, slash command, or built-in tool to use — selec
 and installs it when needed. It continuously scrapes the official Claude marketplace plus community
 sources (GitHub, npm, the MCP registry, PyPI) into a unified **capability map** and keeps it current.
 
-> Status: local, single-machine (no remote). Sub-projects SP1–SP9 complete; the four web-discovery
-> sources are live. **209 tests** pass (indexer 109 + plugin 100).
+> Status: local, single-machine (no remote). Sub-projects SP1–SP11 + SP13 complete (SP12 deferred);
+> the four web-discovery sources are live and the plugin ships an embedded capability map. **228
+> tests** pass (indexer 109 + plugin 119).
 
 ---
 
@@ -143,9 +144,11 @@ Then, inside that session:
   candidate/unknown with one approval), and executes the task (read-only steps auto;
   side-effecting steps with one approval).
 
-A persistent install (via a local marketplace, surviving restarts) additionally requires an
-**absolute** `mapSource` — because marketplace installs copy the plugin to a cache and break the
-relative path. That is essentially the publish/distribution phase (future work).
+The plugin ships with an **embedded** capability map at `plugin/data/capability-map.json`, and
+`mapSource` defaults to the plugin-relative `./data/capability-map.json`. Because the path resolves
+against the plugin root at runtime, this works for marketplace installs too (the plugin is copied
+to a cache and the relative path resolves against that copy). See **Installation** above for the
+marketplace commands.
 
 ---
 
@@ -156,7 +159,7 @@ relative path. That is essentially the publish/distribution phase (future work).
 | Key | Default | Meaning |
 |-----|---------|---------|
 | `enabled` | `true` | master switch for the router |
-| `mapSource` | `../indexer/data/capability-map.json` | path to the map (relative to the plugin, or absolute) |
+| `mapSource` | `./data/capability-map.json` | embedded map path (relative to the plugin, or absolute) |
 | `topN` | `5` | max candidates the hook injects |
 | `scoreFloor` | `0` | minimum lexical score to surface (0 = any signal) |
 | `staleDays` | `14` | age after which a "re-scan" note is appended |
@@ -172,7 +175,7 @@ seed list in `indexer/config/pypi-seeds.json`.
 
 ```bash
 cd indexer && node --test     # 109 tests
-cd plugin  && node --test     # 100 tests
+cd plugin  && node --test     # 119 tests
 ```
 
 Quality bar: deterministic pure modules, fixtures over network, fail-soft on every source, and no

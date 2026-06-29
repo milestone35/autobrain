@@ -6,8 +6,9 @@ injects a passive hint listing candidate capabilities via a fail-open
 
 ## Requirements
 - Node.js >= 18 (no other dependencies)
-- A built map at the path in `config/autopilot.config.json` (`mapSource`,
-  default `../indexer/data/capability-map.json`). Build it with `cd ../indexer && npm run scan`.
+- A capability map at the `mapSource` in `config/autopilot.config.json`. The plugin ships with an
+  embedded `data/capability-map.json` (the default), so it works out of the box; refresh it by
+  regenerating with the indexer (`cd ../indexer && npm run scan`) and copying into `plugin/data/`.
 
 ## Usage
 ```bash
