@@ -23,7 +23,7 @@ Count `missing` checks. **Anlat:** `🔧 <toplam> kontrol yapıldı, <eksik> eks
 
 ## Step 3 — Remediate each missing check
 For each check with `status: "missing"`, act by `remediation.kind`:
-- `"advisory"` → do NOT run anything; just inform: `ℹ️ <title> eksik — `update-config` skill ile ekleyebilirsin.`
+- `"advisory"` → do NOT run anything; just inform: `ℹ️ <title> eksik — update-config skill ile ekleyebilirsin.`
 - `"slash"` → show what will run (`remediation.target`, e.g. `/init`) and ask for ONE approval in Turkish. If approved, invoke that command via the Skill tool (e.g. the `init` skill). If declined, skip and say so in Turkish.
 - `"skill"` → show the skill (`remediation.target`, e.g. `fewer-permission-prompts`) and ask for ONE approval in Turkish. If approved, invoke it via the Skill tool. If declined, skip and say so.
 
