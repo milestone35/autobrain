@@ -1,0 +1,4 @@
+Installed plugins:
+api-security-testing@claude-plugins-official
+docs-writer@claude-plugins-official
+my-tool@community-marketplace

@@ -156,6 +156,30 @@ async function probeList(cmd) {
   }
 }
 
+// Count installed capabilities from `claude plugin list` / `claude mcp list` output.
+// Robust to headers/decoration: every installed plugin shows a `name@marketplace` ref;
+// every mcp server shows a `name: ...` line (the empty-state help text => 0).
+export function countListed(method, listText) {
+  const text = String(listText);
+  if (method === 'mcp') {
+    if (/no\s+mcp\s+servers/i.test(text)) return 0;        // empty-state help text
+    return text.split('\n').filter((l) => /^\s*[\w.-]+:\s/.test(l)).length;
+  }
+  return text.split('\n').filter((l) => /[\w.-]+@[\w.-]+/.test(l)).length;
+}
+
+// Probe both lists and count. probe defaults to the real probeList; tests inject a fake.
+// Fail-soft: an unavailable/failed list command yields 0 for that channel (never throws).
+export async function runInstalledCount({ probe = probeList } = {}) {
+  const count = async (method) => {
+    const p = await probe(verifyCmdFor(method));
+    return p && p.ok ? countListed(method, p.text) : 0;
+  };
+  const plugins = await count('plugin');
+  const mcp = await count('mcp');
+  return { plugins, mcp, total: plugins + mcp };
+}
+
 // Real injected deps for actual installs. isInstalled is false when the probe is
 // unavailable (so we attempt); verify trusts the exit code when the probe is
 // unavailable (so a successful install is not falsely reported as failed).
@@ -283,8 +307,11 @@ async function main(argv) {
     const { steps, decision, lines } = await runExecute({ decisionFile, mapFile, config, approvedIds, now });
     console.log(lines.join('\n'));
     console.log(`\n${JSON.stringify({ decision, steps })}`);
+  } else if (cmd === 'installed') {
+    const res = await runInstalledCount();
+    console.log(JSON.stringify(res));
   } else {
-    console.error('Usage: cli.js <preview|candidates|decide|install|execute> ...');
+    console.error('Usage: cli.js <preview|candidates|decide|install|execute|installed> ...');
     process.exitCode = 1;
   }
 }

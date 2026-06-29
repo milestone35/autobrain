@@ -1,0 +1,2 @@
+github: https://api.githubcopilot.com/mcp/ (HTTP) - ✓ Connected
+filesystem: npx -y @modelcontextprotocol/server-filesystem - ✓ Connected
