@@ -1,6 +1,6 @@
 ---
 name: capability-router
-description: Run the autobrain multi-agent capability council to decide which capabilities best serve a request. Invoked by the /route command; gathers matcher candidates, runs a Planner and a Critic subagent (<=2 rounds), and produces one validated decision object. Then installs any required trusted capability (Step 7) and carries out the task (Step 8): read-only steps auto-run, side-effecting steps need one approval.
+description: "Run the autobrain multi-agent capability council to decide which capabilities best serve a request. Invoked by the /route command; gathers matcher candidates, runs a Planner and a Critic subagent (<=2 rounds), and produces one validated decision object. Then installs any required trusted capability (Step 7) and carries out the task (Step 8): read-only steps auto-run, side-effecting steps need one approval."
 allowed-tools: Bash, Task, Write, Read, Skill
 ---
 
