@@ -4,7 +4,7 @@ export function makeFetchJson(fetchImpl = globalThis.fetch) {
   return async function fetchJson(url, { headers = {} } = {}) {
     let res;
     try {
-      res = await fetchImpl(url, { headers: { 'User-Agent': 'cc-autopilot', ...headers } });
+      res = await fetchImpl(url, { headers: { 'User-Agent': 'autobrain', ...headers } });
     } catch {
       return null;
     }

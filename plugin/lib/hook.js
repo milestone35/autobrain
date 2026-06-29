@@ -11,7 +11,7 @@ export function formatContext(candidates, map, stale, ageDays) {
   const total = map.capabilities?.length ?? 0;
   const staleNote = stale ? `  (harita ${ageDays} gün eski — 'npm run scan' önerilir)` : '';
   const lines = [
-    `[cc-autopilot] Bu istek için işe yarayabilecek yetenekler (harita: ${total} yetenek):${staleNote}`,
+    `[autobrain] Bu istek için işe yarayabilecek yetenekler (harita: ${total} yetenek):${staleNote}`,
     ...candidates.map(formatCandidate),
     '(Alakasızsa yok say. Karar/kurulum sonraki sürümde otomatikleşecek.)'
   ];

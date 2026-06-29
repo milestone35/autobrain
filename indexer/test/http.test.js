@@ -27,5 +27,5 @@ test('makeFetchJson passes headers and a default User-Agent', async () => {
   const fj = makeFetchJson(async (url, opts) => { seen = opts; return { ok: true, json: async () => ({}) }; });
   await fj('http://x', { headers: { Authorization: 'Bearer t' } });
   assert.equal(seen.headers.Authorization, 'Bearer t');
-  assert.equal(seen.headers['User-Agent'], 'cc-autopilot');
+  assert.equal(seen.headers['User-Agent'], 'autobrain');
 });

@@ -24,7 +24,7 @@ export function resolveMapFile(config, root = PLUGIN_ROOT) {
 
 export async function loadPluginConfig(root = PLUGIN_ROOT) {
   try {
-    const raw = await readFile(path.join(root, 'config', 'autopilot.config.json'), 'utf8');
+    const raw = await readFile(path.join(root, 'config', 'autobrain.config.json'), 'utf8');
     return loadConfig(JSON.parse(raw));
   } catch {
     return loadConfig({}); // missing/corrupt config -> defaults
@@ -34,12 +34,12 @@ export async function loadPluginConfig(root = PLUGIN_ROOT) {
 export async function runPreview({ prompt, mapFile, config, now }) {
   const { map, error, stale, ageDays } = await loadMap({ mapFile, staleDays: config.staleDays, now });
   if (error || !map) {
-    return { candidates: [], lines: [`[cc-autopilot] harita yüklenemedi: ${error}`] };
+    return { candidates: [], lines: [`[autobrain] harita yüklenemedi: ${error}`] };
   }
   const promptTokens = tokenize(prompt);
   const { candidates } = matchPrompt(prompt, map, { topN: config.topN, scoreFloor: config.scoreFloor });
   const lines = [
-    `[cc-autopilot] preview — ${candidates.length} aday (harita: ${map.capabilities.length}${stale ? `, ${ageDays}g eski` : ''})`,
+    `[autobrain] preview — ${candidates.length} aday (harita: ${map.capabilities.length}${stale ? `, ${ageDays}g eski` : ''})`,
     ...candidates.flatMap((c) => {
       const head = `  [score ${scoreCapability(promptTokens, c)}] ${c.id}  (${c.kind}·${c.trust}) — ${c.name}`;
       return c.install?.command ? [head, `      kur: ${c.install.command}`] : [head];
@@ -79,7 +79,7 @@ export async function runDecide({ decisionFile, mapFile, config, now }) {
   if (readError) decision.rationale = `karar dosyası okunamadı: ${readError}`;
 
   const lines = [
-    `[cc-autopilot] karar: ${decision.decision}  (confidence ${decision.confidence})`,
+    `[autobrain] karar: ${decision.decision}  (confidence ${decision.confidence})`,
     decision.capabilities.length ? `  yetenekler: ${decision.capabilities.join(', ')}` : '  yetenekler: -',
     decision.installs.length ? `  kurulacak:  ${decision.installs.join(', ')}` : '  kurulacak:  -',
     decision.method ? `  yöntem: ${decision.method}` : '  yöntem: -',
@@ -225,7 +225,7 @@ export async function runInstall({ decisionFile, mapFile, config, approvedIds = 
   let raw = null;
   try { raw = JSON.parse(await readFile(decisionFile, 'utf8')); } catch { raw = null; }
   if (!raw || !map) {
-    return { results: [], lines: ['[cc-autopilot] kurulum: karar/harita okunamadı, hiçbir şey kurulmadı'] };
+    return { results: [], lines: ['[autobrain] kurulum: karar/harita okunamadı, hiçbir şey kurulmadı'] };
   }
   // Re-apply the same gate as `decide` so installing from a raw scratch file cannot
   // bypass the confidence threshold / id-filtering (low confidence -> no installs).
@@ -234,7 +234,7 @@ export async function runInstall({ decisionFile, mapFile, config, approvedIds = 
   const plan = planInstalls(decision, map, { autoInstall: config.autoInstall });
   const deps = env || realEnv(approvedIds, (m) => console.error(m));
   const results = await executeInstalls(plan, deps);
-  const lines = ['[cc-autopilot] kurulum sonuçları:', ...results.map(formatInstallResult)];
+  const lines = ['[autobrain] kurulum sonuçları:', ...results.map(formatInstallResult)];
   if (results.some((r) => r.status === 'needs-approval')) {
     lines.push("(Onay bekleyenler için: tekrar '--approved <id>' ile çağırın.)");
   }
@@ -263,7 +263,7 @@ export async function runExecute({ decisionFile, mapFile, config, approvedIds = 
   let raw = null;
   try { raw = JSON.parse(await readFile(decisionFile, 'utf8')); } catch { raw = null; }
   if (!raw || !map) {
-    return { steps: [], decision: 'no_capability_needed', lines: ['[cc-autopilot] yürütme: karar/harita okunamadı, plan yok'] };
+    return { steps: [], decision: 'no_capability_needed', lines: ['[autobrain] yürütme: karar/harita okunamadı, plan yok'] };
   }
   // Re-apply the same gate as `decide`/`install` (low confidence / unknown ids -> nothing to run).
   const knownIds = new Set(map.capabilities.map((c) => c.id));
@@ -272,7 +272,7 @@ export async function runExecute({ decisionFile, mapFile, config, approvedIds = 
     ...s,
     status: s.risk === 'read-only' || approvedIds.has(s.id) ? 'ready' : 'needs-approval'
   }));
-  const lines = ['[cc-autopilot] yürütme planı:', ...steps.map(formatExecStep)];
+  const lines = ['[autobrain] yürütme planı:', ...steps.map(formatExecStep)];
   if (!steps.length) lines.push('  (yürütülecek adım yok)');
   if (steps.some((s) => s.status === 'needs-approval')) {
     lines.push("(Yan-etkili adımlar onay bekliyor — '--approved <id>' ile teyit edin.)");

@@ -1,4 +1,4 @@
-// Project optimization checklist for cc-autopilot's /autopilot-tune.
+// Project optimization checklist for autobrain's /autobrain-tune.
 // Pure + side-effect-free: each check detects a signal in a pre-gathered `state`
 // object and declares how to remediate it. Detection I/O lives in cli.js (DI'd).
 // `remediation.kind`: 'slash' (run a slash command), 'skill' (invoke a skill),

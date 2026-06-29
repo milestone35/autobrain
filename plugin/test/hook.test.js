@@ -15,7 +15,7 @@ test('handleHook injects additionalContext for a matching prompt', async () => {
     config: cfg(), mapFile: FIXT, now: '2026-06-25T00:00:00Z'
   });
   assert.ok(out && typeof out.additionalContext === 'string');
-  assert.match(out.additionalContext, /cc-autopilot/);
+  assert.match(out.additionalContext, /autobrain/);
   assert.match(out.additionalContext, /api-audit/);
   assert.match(out.additionalContext, /claude plugin install api-sec@mp/);
 });

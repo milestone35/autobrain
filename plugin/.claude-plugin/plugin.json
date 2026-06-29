@@ -1,6 +1,6 @@
 {
-  "name": "cc-autopilot",
+  "name": "autobrain",
   "version": "0.1.0",
-  "description": "Routes each prompt to the best capabilities from the cc-autopilot capability map (passive candidate hints).",
+  "description": "Routes each prompt to the best capabilities from the autobrain capability map (passive candidate hints).",
   "hooks": "./hooks/hooks.json"
 }
