@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `/route` skill'i çalışırken kullanıcıya Türkçe adım-adım ilerleyiş + sonda toplu özet versin ve her zaman toplam yetenek haritası boyutunu göstersin.
+**Goal:** `/route` skill'i çalışırken kullanıcıya Türkçe adım-adım ilerleyiş + sonda toplu özet versin; her zaman skill'in devrede olduğunu, toplam yetenek haritası boyutunu ve gerçekten kurulu yetenek sayısını göstersin.
 
-**Architecture:** İki parça. (A) `plugin/lib/cli.js` içindeki `runCandidates`, çıktısına türetilmiş `mapTotal` (tam harita boyutu) alanını ekler — saf veri eki, başka modül etkilenmez. (B) `plugin/skills/capability-router/SKILL.md`, ajana her ana adımda tek satırlık Türkçe ilerleyiş + sonda toplu özet yazdıran bir anlatım kuralı içerir.
+**Architecture:** Üç parça. (A) `runCandidates` çıktısına türetilmiş `mapTotal` (tam harita boyutu) alanı — saf veri eki. (B) Yeni `installed` CLI komutu: `claude plugin list` + `claude mcp list` çıktılarından gerçek kurulu sayıyı saf `countListed` ile sayar, fail-soft probe ile sarmalanır. (C) `SKILL.md`, ajana intro'da "skill devrede + toplam harita + kurulu", her adımda tek satır ilerleyiş, sonda toplu özet yazdıran anlatım kuralı içerir.
 
 **Tech Stack:** Node.js ESM (zero-dep), `node --test` (built-in test runner), Markdown SKILL prompt.
 
@@ -16,11 +16,13 @@
 
 ## File Structure
 
-- **Modify:** `plugin/lib/cli.js` — `runCandidates` dönüş objesine `mapTotal` eklenir (başarı + hata yolu). Başka fonksiyon dokunulmaz.
+- **Modify:** `plugin/lib/cli.js` — (1) `runCandidates` dönüş objesine `mapTotal` (başarı + hata yolu); (2) yeni saf `countListed(method, listText)` + `runInstalledCount({ env })` + `installed` CLI komutu (mevcut `probeList`/`verifyCmdFor` yeniden kullanılır).
 - **Modify:** `plugin/test/candidates.test.js` — `mapTotal` doğrulaması (başarı yolunda tam harita boyutu, hata yolunda 0).
-- **Modify:** `plugin/skills/capability-router/SKILL.md` — "İlerleyiş anlatımı (Türkçe)" bölümü + adım anlatım talimatları.
+- **Create:** `plugin/test/installed-cli.test.js` — `countListed` (plugin/mcp, dolu + empty-state) ve `runInstalledCount` (enjekte probe, fail-soft) testleri.
+- **Create:** `plugin/test/fixtures/plugin-list.sample.txt` + `plugin/test/fixtures/mcp-list.sample.txt` — gerçek `claude ... list` çıktısından yakalanan format örnekleri.
+- **Modify:** `plugin/skills/capability-router/SKILL.md` — "Progress narration (Turkish)" bölümü + intro/adım anlatım talimatları.
 
-`decide`/`install`/`execute` komutları ve diğer lib modülleri **değişmez**.
+`decide`/`install`/`execute` komutları ve `installer.js` **değişmez**.
 
 ---
 
@@ -106,12 +108,156 @@ git commit -m "feat(route): runCandidates çıktısına mapTotal (tam harita boy
 
 ---
 
-## Task 2: `SKILL.md`'ye Türkçe ilerleyiş anlatımı kuralı ekle
+## Task 2: `installed` komutu — gerçek kurulu yetenek sayısı (kod + test)
+
+**Files:**
+- Modify: `plugin/lib/cli.js` (`countListed`, `runInstalledCount`, `installed` komutu)
+- Create: `plugin/test/installed-cli.test.js`
+- Create: `plugin/test/fixtures/plugin-list.sample.txt`, `plugin/test/fixtures/mcp-list.sample.txt`
+
+Sayaç **gerçek `claude ... list` formatına** karşı çalışmalı. Fixture'lar bilinen örüntülere göre yazılır (plugin = `name@marketplace` satırları; mcp = `name: ...` satırları + bilinen empty-state metni), testler deterministik kalsın diye **commit'li**. Step 6'da gerçek komutla format doğrulanır; sapma varsa fixture+regex güncellenir.
+
+- [ ] **Step 1: Fixture dosyalarını oluştur**
+
+`plugin/test/fixtures/plugin-list.sample.txt` (kurulu 3 plugin — `name@marketplace` referansı):
+```
+Installed plugins:
+api-security-testing@claude-plugins-official
+docs-writer@claude-plugins-official
+my-tool@community-marketplace
+```
+
+`plugin/test/fixtures/mcp-list.sample.txt` (kurulu 2 mcp server — `name: ...` satırı):
+```
+github: https://api.githubcopilot.com/mcp/ (HTTP) - ✓ Connected
+filesystem: npx -y @modelcontextprotocol/server-filesystem - ✓ Connected
+```
+
+- [ ] **Step 2: Failing test dosyasını yaz**
+
+`plugin/test/installed-cli.test.js`:
+```javascript
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { countListed, runInstalledCount } from '../lib/cli.js';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const read = (f) => readFileSync(path.join(HERE, 'fixtures', f), 'utf8');
+
+test('countListed counts plugins from `claude plugin list` output', () => {
+  assert.equal(countListed('plugin', read('plugin-list.sample.txt')), 3);
+});
+test('countListed counts mcp servers from `claude mcp list` output', () => {
+  assert.equal(countListed('mcp', read('mcp-list.sample.txt')), 2);
+});
+test('countListed returns 0 on mcp empty-state help text', () => {
+  assert.equal(countListed('mcp', 'No MCP servers configured. Use `claude mcp add` to add a server.'), 0);
+});
+test('countListed returns 0 on empty plugin output', () => {
+  assert.equal(countListed('plugin', ''), 0);
+});
+test('runInstalledCount sums plugin+mcp via injected probe', async () => {
+  const probe = async (cmd) => ({
+    ok: true,
+    text: cmd.includes('plugin') ? read('plugin-list.sample.txt') : read('mcp-list.sample.txt')
+  });
+  assert.deepEqual(await runInstalledCount({ probe }), { plugins: 3, mcp: 2, total: 5 });
+});
+test('runInstalledCount fail-soft: probe failure => 0, no throw', async () => {
+  const probe = async () => ({ ok: false, text: '' });
+  assert.deepEqual(await runInstalledCount({ probe }), { plugins: 0, mcp: 0, total: 0 });
+});
+```
+
+- [ ] **Step 3: Testi çalıştır, başarısız olduğunu gör**
+
+Run:
+```bash
+export PATH="/c/Users/harun.hanbay/AppData/Local/anaconda3/envs/ragflow-dev:$PATH"
+cd /c/Users/harun.hanbay/Desktop/cc-autopilot/plugin && node --test test/installed-cli.test.js
+```
+Expected: FAIL — `countListed`/`runInstalledCount` export edilmemiş (`is not a function`).
+
+- [ ] **Step 4: `cli.js`'e `countListed` + `runInstalledCount` ekle**
+
+`plugin/lib/cli.js` içinde, `probeList` fonksiyonundan SONRA (probe'a referans verebilmek için) şunları ekle:
+```javascript
+// Count installed capabilities from `claude plugin list` / `claude mcp list` output.
+// Robust to headers/decoration: every installed plugin shows a `name@marketplace` ref;
+// every mcp server shows a `name: ...` line (the empty-state help text => 0).
+export function countListed(method, listText) {
+  const text = String(listText);
+  if (method === 'mcp') {
+    if (/no\s+mcp\s+servers/i.test(text)) return 0;        // empty-state help text
+    return text.split('\n').filter((l) => /^\s*[\w.-]+:\s/.test(l)).length;
+  }
+  return text.split('\n').filter((l) => /[\w.-]+@[\w.-]+/.test(l)).length;
+}
+
+// Probe both lists and count. probe defaults to the real probeList; tests inject a fake.
+// Fail-soft: an unavailable/failed list command yields 0 for that channel (never throws).
+export async function runInstalledCount({ probe = probeList } = {}) {
+  const count = async (method) => {
+    const p = await probe(verifyCmdFor(method));
+    return p && p.ok ? countListed(method, p.text) : 0;
+  };
+  const plugins = await count('plugin');
+  const mcp = await count('mcp');
+  return { plugins, mcp, total: plugins + mcp };
+}
+```
+
+- [ ] **Step 5: `installed` CLI komutunu `main`'e ekle**
+
+`plugin/lib/cli.js` `main` fonksiyonunda, `execute` dalından SONRA, `else` (Usage) dalından ÖNCE ekle:
+```javascript
+  } else if (cmd === 'installed') {
+    const res = await runInstalledCount();
+    console.log(JSON.stringify(res));
+```
+
+- [ ] **Step 6: Testi çalıştır + gerçek formatı doğrula**
+
+Run (birim testleri):
+```bash
+export PATH="/c/Users/harun.hanbay/AppData/Local/anaconda3/envs/ragflow-dev:$PATH"
+cd /c/Users/harun.hanbay/Desktop/cc-autopilot/plugin && node --test test/installed-cli.test.js
+```
+Expected: PASS — 6 test yeşil.
+
+Sonra gerçek format doğrulaması (kurulu durumun ne olursa olsun, sayı makul/çökme yok):
+```bash
+claude plugin list; echo '---'; claude mcp list; echo '==='; node lib/cli.js installed
+```
+Beklenen: son satır `{"plugins":P,"mcp":M,"total":T}` ve P/M, üstteki gerçek listelerle tutarlı. **Eğer gerçek format farklı dekorasyon kullanıyorsa** (ör. madde imi, renk kodu, farklı ayraç) ki sayım sapıyorsa: fixture'ları gerçek formata göre güncelle ve `countListed` regex'ini ona göre düzelt, sonra Step 2 testlerini tekrar geçir.
+
+- [ ] **Step 7: Tam plugin test seti (regresyon)**
+
+Run:
+```bash
+export PATH="/c/Users/harun.hanbay/AppData/Local/anaconda3/envs/ragflow-dev:$PATH"
+cd /c/Users/harun.hanbay/Desktop/cc-autopilot/plugin && node --test
+```
+Expected: PASS — `fail 0` (yeni testler dahil).
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add plugin/lib/cli.js plugin/test/installed-cli.test.js plugin/test/fixtures/plugin-list.sample.txt plugin/test/fixtures/mcp-list.sample.txt
+git commit -m "feat(route): installed komutu — gerçek kurulu plugin/mcp sayısı (countListed, fail-soft)"
+```
+
+---
+
+## Task 3: `SKILL.md`'ye Türkçe ilerleyiş anlatımı kuralı ekle
 
 **Files:**
 - Modify: `plugin/skills/capability-router/SKILL.md`
 
-Prompt metni birim-testlenmez; doğrulama Task 1'in `mapTotal` testi + spec şablonuyla yapılır. Adımlar tek aksiyon olacak şekilde ayrıldı.
+Prompt metni birim-testlenmez; doğrulama Task 1+2 testleri + spec şablonuyla yapılır. Adımlar tek aksiyon olacak şekilde ayrıldı.
 
 - [ ] **Step 1: "İlerleyiş anlatımı (Türkçe)" bölümünü Inputs'tan sonra ekle**
 
@@ -120,23 +266,30 @@ Prompt metni birim-testlenmez; doğrulama Task 1'in `mapTotal` testi + spec şab
 ```markdown
 
 ## Progress narration (Turkish — REQUIRED)
-All user-facing progress and summaries MUST be written in **Turkish**. At each main step
-below, emit ONE short Turkish progress line; at the very end, emit one consolidated summary
+All user-facing progress and summaries MUST be written in **Turkish**. At the start emit ONE
+intro line stating the skill is active plus the total map size and installed count; at each main
+step below emit ONE short Turkish progress line; at the very end emit one consolidated summary
 block. Do NOT dump raw CLI output — summarize it in your own words. (The CLI's own `lines`
 output is already Turkish; this rule pins YOUR narration to Turkish too.) Narration templates
 (wording need not be verbatim) are given inline at each step under "Anlat:".
 ```
 
-- [ ] **Step 2: Step 1'e aday-sayısı + toplam-harita anlatımı ekle**
+- [ ] **Step 2: Step 1'e intro (skill devrede) + aday-sayısı anlatımı ekle**
 
 `## Step 1 — Gather candidates (deterministic)` bölümünün sonuna (the "Parse the JSON. If `candidates` is empty..." satırından sonra) ekle:
 
 ```markdown
 
-Parse `mapTotal` (the full capability-map size) and `candidates.length` from the JSON.
-**Anlat:** `🔎 <candidates.length> aday buldum (toplam harita: <mapTotal> yetenek).`
+Parse `mapTotal` (the full capability-map size) and `candidates.length` from the JSON. Then run
+the installed-inventory command once and parse its JSON `{ "plugins", "mcp", "total" }`:
+\`\`\`bash
+node "$PLUGIN_ROOT/lib/cli.js" installed
+\`\`\`
+**Anlat (intro — skill devrede):**
+`🟢 cc-autopilot devrede — toplam harita: <mapTotal> yetenek, kurulu: <installed.total>.`
+**Anlat (adaylar):** `🔎 <candidates.length> aday buldum.`
 If `candidates` is empty: `🔎 Bu istek için uygun aday yok — varsayılan davranışla devam ediyorum.`
-Remember `mapTotal` and the candidate count — the final summary (Step 8) reuses them.
+Remember `mapTotal`, `installed.total` and the candidate count — the final summary (Step 8) reuses them.
 ```
 
 - [ ] **Step 3: Step 6'ya karar anlatımı ekle**
@@ -169,9 +322,9 @@ If any `failed`: `⚠️ <sayı> yetenek kurulamadı — o yetenek olmadan devam
 - **Anlat (yürütmeye başlarken):** `▶️ Bunları kullanarak başlıyorum: <yöntem>.`
   For side-effecting steps, ask the approval question in Turkish (show the exact command).
 - Report what was executed, what was skipped, and any errors — in Turkish.
-- **Final toplu özet** (akışın en sonunda, tek blok; Step 1'deki sayıları ve `mapTotal`'ı kullan):
+- **Final toplu özet** (akışın en sonunda, tek blok; Step 1'deki sayıları, `mapTotal` ve `installed.total`'ı kullan):
   ```
-  Özet: <aday sayısı> aday bulundu, <kurulan sayısı> kuruldu, toplam harita <mapTotal> yetenek.
+  Özet: <aday sayısı> aday bulundu, <kurulan sayısı> kuruldu, toplam harita <mapTotal> yetenek, kurulu <installed.total>.
   <ne ile başlandığı / sonuç>.
   ```
 ```
@@ -198,10 +351,11 @@ git commit -m "feat(route): SKILL'e Türkçe adım-adım ilerleyiş + final öze
 
 **1. Spec coverage:**
 - Spec §2 (Parça A `mapTotal`, başarı + hata yolu) → Task 1 (Step 1/2 testler, Step 4 implementasyon). ✓
-- Spec §3 (Parça B SKILL anlatımı; Step 1/6/7/8 + final özet) → Task 2 (Step 1–5). ✓
-- Spec §5 (test stratejisi: başarı `mapTotal===length`, hata `mapTotal===0`, regresyon) → Task 1 Step 1/2/6. ✓
-- Spec "Kapsam dışı" (CLI `lines` değişmez, yeni komut yok, decide/install/execute dokunulmaz) → Task'larda yalnızca `runCandidates` + SKILL.md değişiyor. ✓
+- Spec §3 (Parça B `installed`/`countListed`/`runInstalledCount`, runtime, fail-soft, format yakalama) → Task 2 (Step 1–6). ✓
+- Spec §4 (Parça C SKILL anlatımı; intro + Step 1/6/7/8 + final özet, kurulu sayısı dahil) → Task 3 (Step 1–5). ✓
+- Spec §6 (test stratejisi: `mapTotal===length`/`===0`; `countListed` dolu+empty; `runInstalledCount` fail-soft) → Task 1 Step 1/2 + Task 2 Step 2. ✓
+- Spec "Kapsam dışı" (CLI `lines` değişmez; decide/install/execute + installer.js dokunulmaz; `/init`→SP11, oto-`/new`→SP12) → Task'larda yalnızca `runCandidates` + yeni `installed` komutu + SKILL.md değişiyor. ✓
 
-**2. Placeholder scan:** TBD/TODO yok; her kod adımında tam kod var; her komutta beklenen çıktı var. ✓
+**2. Placeholder scan:** TBD/TODO yok; her kod adımında tam kod var; her komutta beklenen çıktı var. Format-belirsizliği Task 2 Step 6'da gerçek-komut doğrulamasıyla kapatılıyor (tahmin değil). ✓
 
-**3. Type consistency:** Tek yeni alan `mapTotal` (number) — Task 1'de tanımlandı, Task 2'de aynı isimle (`<mapTotal>`) anlatımda kullanıldı. `candidates.length` her iki task'ta tutarlı. ✓
+**3. Type consistency:** `mapTotal` (number) Task 1'de tanımlı, Task 3 anlatımında aynı isimle kullanılıyor. `installed` JSON şekli `{plugins,mcp,total}` Task 2'de tanımlı (`runInstalledCount` dönüşü), Task 3 anlatımında `installed.total` olarak kullanılıyor — tutarlı. `countListed(method, listText)` imzası Task 2 test+implementasyonda aynı. `candidates.length` tüm task'larda tutarlı. ✓

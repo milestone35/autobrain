@@ -17,21 +17,31 @@ ajan yönergeleri İngilizce ("Report the final decision", "report them as-is") 
 **kullanıcıya dönük anlatımı** Türkçe garanti değil ve adım-adım ilerleyiş özeti yok.
 
 **Kullanıcı isteği:** Skill çalışırken özet ve ilerleyiş Türkçe olmalı; örn. *"bu task için 5
-aday buldum, 2'sini kurdum, bunları kullanarak başlıyorum"*. Ayrıca her zaman **toplam yetenek
-haritası boyutu** ("toplam map listemiz ne") anlatımda görünmeli.
+aday buldum, 2'sini kurdum, bunları kullanarak başlıyorum"*. Ayrıca uygun bir yerde **skill'in
+açık (devrede) olduğu**, **toplam yetenek haritası boyutu** ("toplam map listemiz ne") ve
+**gerçekten kurulu yetenek sayısı** anlatımda görünmeli.
 
 ### Kapsam
 
 - **Parça A (kod):** `runCandidates` çıktısına `mapTotal` (toplam yetenek sayısı) eklenir.
-- **Parça B (skill):** `SKILL.md`'ye, ajanın her adımda kısa Türkçe ilerleyiş + sonda toplu
-  özet vereceği bir anlatım kuralı eklenir.
+- **Parça B (kod):** Yeni `installed` CLI komutu — `claude plugin list` + `claude mcp list`
+  çıktılarından **gerçek kurulu** plugin/mcp sayısını probe edip sayar (fail-soft). Saf sayaç
+  fonksiyonu, gerçek çıktı formatından yakalanan fixture'a karşı testlenir.
+- **Parça C (skill):** `SKILL.md`'ye, ajanın her adımda kısa Türkçe ilerleyiş + intro'da
+  "skill devrede + toplam harita + kurulu sayısı" + sonda toplu özet vereceği anlatım kuralı.
 
-### KAPSAM DIŞI (açıkça)
+### KAPSAM DIŞI (açıkça — ayrı alt-projelere devredildi)
 
 - CLI'nın mevcut Türkçe `lines` çıktıları **değişmez** (zaten Türkçe).
-- Yeni komut, yeni dil seçeneği veya İngilizce'ye geri-düşüş YOK (tek dil: Türkçe).
-- Karar/kurulum/yürütme **mantığı** değişmez — yalnızca veri yüzeyi (`mapTotal`) ve anlatım.
+- İngilizce'ye geri-düşüş / dil seçeneği YOK (tek dil: Türkçe).
+- Karar/kurulum/yürütme **mantığı** değişmez — yalnızca veri yüzeyi (`mapTotal` + `installed`
+  sayacı) ve anlatım eklenir.
 - Hook (UserPromptSubmit) pasif kalır; bu iş yalnızca `/route` akışını etkiler.
+- **`/init` optimizasyon kontrolü** (proje CLAUDE.md/init durumu kontrol edilip eksikse
+  oluşturulması) → **SP11** olarak ayrı brainstorm+spec+plan. SP10 dışında.
+- **Uzun sohbette oto-`/new` + context koruma** → **SP12** olarak ayrı tasarım. Teknik not:
+  `/new` context'i SIFIRLAR (korumaz) ve bir SKILL.md `/new` tetikleyemez; bu iş harness/hook +
+  memory-handoff (veya yerleşik auto-compaction) gerektirir. SP10 dışında.
 
 ---
 
@@ -62,7 +72,38 @@ toplam tek kaynaktan (haritanın kendisi) gelir.
 
 ---
 
-## 3. Parça B — `SKILL.md` Türkçe anlatım kuralı
+## 3. Parça B — `installed` komutu (kurulu sayısı, runtime)
+
+**Dosya:** `plugin/lib/cli.js` (yeni saf fonksiyon + yeni `installed` komutu).
+
+"Yüklü olan skill sayısı" = **gerçekten kurulu** plugin + mcp sayısı (kullanıcı onayı: runtime).
+Kaynak: `claude plugin list` ve `claude mcp list` çıktıları, mevcut `probeList` deseniyle.
+
+- **Saf sayaç:** `countListed(method, listText)` → number. Yan etkisiz, format'a karşı testlenir.
+  - `plugin`: kurulu her plugin `name@marketplace` referansıyla göründüğünden, çıktıdaki
+    `name@marketplace` örüntülerini (kelime-sınırlı) sayar. Boş/yardım metni → 0.
+  - `mcp`: empty-state guard (`/no\s+mcp\s+servers/i`) → 0; aksi halde gerçek server
+    satırlarını sayar (yardım/başlık satırları hariç).
+- **Probe:** `runInstalledCount({ env })` → `{ plugins, mcp, total }`. `env.run`/probe DI'lı,
+  fail-soft: list komutu yoksa/başarısızsa o kanal `0` (asla throw etmez, `/route` akışını kırmaz).
+- **CLI:** `node lib/cli.js installed` → son satır JSON `{ "plugins": N, "mcp": M, "total": N+M }`.
+
+```jsonc
+// node lib/cli.js installed
+{ "plugins": 3, "mcp": 2, "total": 5 }
+```
+
+**Format yakalama (TDD ön-koşulu):** `claude plugin list` / `claude mcp list`'in tam çok-satırlı
+çıktı formatı repoda yok. Parser tahminle değil; implementasyonda **önce gerçek komut çalıştırılıp
+çıktı bir fixture'a kaydedilir**, sayaç o fixture'a karşı yazılır. Empty-state ve dolu-state
+ikisi de test edilir.
+
+**Neden ayrı komut:** `candidates` per-prompt eşleştirmedir; runtime envanteri (alt-süreç
+`claude ... list`) ayrı sorumluluktur. `/route` intro'da bir kez çağrılır.
+
+---
+
+## 4. Parça C — `SKILL.md` Türkçe anlatım kuralı
 
 `plugin/skills/capability-router/SKILL.md`'ye, Inputs'tan hemen sonra bir **"İlerleyiş anlatımı
 (Türkçe)"** bölümü eklenir ve ilgili adımlara kısa anlatım talimatı serpilir. Kural:
@@ -72,8 +113,10 @@ toplam tek kaynaktan (haritanın kendisi) gelir.
 
 **Adım eşlemesi (anlatım şablonu, kelime kelime zorunlu değil):**
 
-- **Step 1 (aday toplama):** `🔎 <N> aday buldum (toplam harita: <mapTotal> yetenek).`
-  — `N = candidates.length`, `mapTotal` Step 1 JSON'undan.
+- **Step 0 (intro — skill devrede):** Akışın başında, `installed` komutunu bir kez çağırıp:
+  `🟢 cc-autopilot devrede — toplam harita: <mapTotal> yetenek, kurulu: <installed.total>.`
+  (`mapTotal` Step 1 JSON'undan, `installed.total` `installed` komutundan.)
+- **Step 1 (aday toplama):** `🔎 <N> aday buldum.` — `N = candidates.length`.
   Aday yoksa: `🔎 Bu istek için uygun aday yok — varsayılan davranışla devam ediyorum.`
 - **Step 6 (karar):** `🧠 Konsey kararı: <decision> — yetenek(ler): <id'ler> (gerekçe: <kısa>).`
 - **Step 7 (kurulum):** `📦 <X> kuruldu, <Y> atlandı/zaten var` ve onay bekleyen varsa
@@ -81,7 +124,7 @@ toplam tek kaynaktan (haritanın kendisi) gelir.
 - **Step 8 (yürütme):** `▶️ Bunları kullanarak başlıyorum: <yöntem>.` Yan-etkili adım onayı Türkçe.
 - **Final toplu özet** (akışın sonunda, tek blok):
   ```
-  Özet: <N> aday bulundu, <X> kuruldu, toplam harita <mapTotal> yetenek.
+  Özet: <N> aday bulundu, <X> kuruldu, toplam harita <mapTotal> yetenek, kurulu <installed.total>.
   <ne ile başlandığı / sonuç>.
   ```
 
@@ -90,40 +133,52 @@ ediyorum`.
 
 ---
 
-## 4. Mimari & İzolasyon
+## 5. Mimari & İzolasyon
 
 - **Parça A** saf veri ekidir: `runCandidates` zaten haritayı yüklüyor, `mapTotal` türetilmiş
   alan. Diğer modüller (matcher/decision/installer/execution) **etkilenmez**.
-- **Parça B** salt prompt/dokümantasyon değişikliğidir; çalışma-zamanı mantığı yok. Anlatımın
-  beslendiği veriler (aday sayısı, karar, kurulum sonucu, `mapTotal`) zaten ilgili adımların
-  çıktısında mevcut.
+- **Parça B** mevcut `probeList`/`realEnv` desenini izler: saf `countListed` (testlenebilir) +
+  fail-soft probe sarmalayıcı. `installer.js` ve diğer komutlar değişmez (yeni, izole komut).
+- **Parça C** salt prompt/dokümantasyon değişikliğidir; çalışma-zamanı mantığı yok. Anlatımın
+  beslendiği veriler (aday sayısı, karar, kurulum sonucu, `mapTotal`, `installed`) zaten ilgili
+  adımların çıktısında mevcut.
 
 ---
 
-## 5. Test Stratejisi (TDD — testsiz merge yok)
+## 6. Test Stratejisi (TDD — testsiz merge yok)
 
-**Parça A (`plugin/test/`):**
+**Parça A (`plugin/test/candidates.test.js`):**
 
-- `runCandidates` başarı yolunda `mapTotal === map.capabilities.length` (sahte/küçük harita
-  fixture'ıyla; `candidates` filtresinden bağımsız tam harita boyutu).
+- `runCandidates` başarı yolunda `mapTotal === map.capabilities.length` (fixture 3 cap, eşleşen 2
+  → `mapTotal===3`, `candidates.length===2`: tam-harita ≠ aday-sayısı kanıtı).
 - `runCandidates` hata yolunda (`mapFile` yok/bozuk) `mapTotal === 0` ve `candidates === []`.
-- (Regresyon) `candidates` alanının şekli/sıralaması değişmedi.
 
-**Parça B:** Prompt metni birim-testlenmez. Doğrulama, `runCandidates`'in `mapTotal` sağladığını
-gösteren Parça A testleriyle + spec'teki anlatım şablonunun gözden geçirilmesiyle yapılır.
+**Parça B (`plugin/test/installed-cli.test.js`, yeni):**
 
----
+- `countListed('plugin', <çok-satırlı örnek>)` → doğru sayı; empty/yardım metni → 0.
+- `countListed('mcp', <çok-satırlı örnek>)` → doğru sayı; empty-state (`No MCP servers...`) → 0.
+- `runInstalledCount` enjekte edilmiş probe ile `{plugins, mcp, total}` döndürür; probe
+  başarısız/eksikse ilgili kanal `0` (fail-soft, throw yok).
+- Örnekler, implementasyonda gerçek `claude ... list` çıktısından yakalanan fixture'a dayanır.
 
-## 6. Riskler / Açık Noktalar
-
-- **Risk:** Anlatım fazla gürültülü olabilir. Azaltım: adım başına **tek satır**, sonda tek özet
-  bloğu; ham CLI çıktısı tekrar basılmaz.
-- **Açık nokta yok:** İki tasarım kararı (her-adım+final anlatım; `mapTotal`'ı `candidates`
-  JSON'una ekleme) kullanıcı tarafından onaylandı.
+**Parça C:** Prompt metni birim-testlenmez; doğrulama Parça A+B testleri + anlatım şablonu
+gözden geçirmesiyle yapılır.
 
 ---
 
-## 7. Kalite Çıtası
+## 7. Riskler / Açık Noktalar
 
-Teknik borçsuz, deterministik saf ekleme + testler. `mapTotal` testsiz merge edilmez. Anlatım
-tek dil (Türkçe), tutarlı şablon. İlgili: `docs/superpowers/specs/2026-06-19-cc-autopilot-design.md`.
+- **Risk:** `claude plugin list`/`mcp list` çıktı formatı bilinmiyor → kırılgan parser. Azaltım:
+  format **önce gerçek komuttan yakalanır**, sayaç ona karşı yazılır; her iki kanal fail-soft.
+- **Risk:** Anlatım fazla gürültülü olabilir. Azaltım: adım başına **tek satır**, sonda tek özet.
+- **Açık nokta yok:** Üç tasarım kararı (her-adım+intro+final anlatım; `mapTotal`'ı `candidates`'a
+  ekleme; kurulu sayısı = runtime) kullanıcı tarafından onaylandı. `/init` ve oto-`/new` ayrı
+  alt-projelere (SP11/SP12) devredildi.
+
+---
+
+## 8. Kalite Çıtası
+
+Teknik borçsuz, deterministik saf ekleme + testler. `mapTotal` ve `countListed`/`runInstalledCount`
+testsiz merge edilmez; parser gerçek formata karşı doğrulanır. Anlatım tek dil (Türkçe), tutarlı
+şablon. İlgili: `docs/superpowers/specs/2026-06-19-cc-autopilot-design.md`.
