@@ -292,7 +292,8 @@ export async function gatherProjectState({ root, exists, readJson }) {
   let permissionsAllowCount = 0;
   let hasHooks = false;
   for (const f of settingsFiles) {
-    const s = await readJson(f);
+    let s;
+    try { s = await readJson(f); } catch { continue; }
     if (!s) continue;
     if (Array.isArray(s.permissions?.allow)) permissionsAllowCount += s.permissions.allow.length;
     if (s.hooks && typeof s.hooks === 'object' && Object.keys(s.hooks).length > 0) hasHooks = true;

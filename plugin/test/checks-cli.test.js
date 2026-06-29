@@ -40,6 +40,13 @@ test('gatherProjectState: fail-soft when settings missing/broken (readJson null)
   assert.deepEqual(s, { hasClaudeMd: false, permissionsAllowCount: 0, hasHooks: false });
 });
 
+test('gatherProjectState: fail-soft when readJson throws', async () => {
+  const exists = () => false;
+  const readJson = async () => { throw new Error('EACCES'); };
+  const s = await gatherProjectState({ root: ROOT, exists, readJson });
+  assert.deepEqual(s, { hasClaudeMd: false, permissionsAllowCount: 0, hasHooks: false });
+});
+
 test('runChecks returns { root, checks } with evaluated statuses', async () => {
   const exists = (p) => p === j('CLAUDE.md');
   const readJson = async () => null;
