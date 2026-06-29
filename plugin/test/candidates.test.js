@@ -22,6 +22,9 @@ test('runCandidates returns structured machine-readable candidates', async () =>
   assert.equal(top.trust, 'trusted');
   assert.equal(top.install, 'claude plugin install api-sec@mp');
   assert.equal(typeof top.score, 'number');
+  // mapTotal = tam harita boyutu (aday sayısı DEĞİL): fixture 3 cap, eşleşen 2
+  assert.equal(res.mapTotal, 3);
+  assert.equal(res.candidates.length, 2);
 });
 
 test('runCandidates returns empty + error when map missing (fail-soft)', async () => {
@@ -31,4 +34,5 @@ test('runCandidates returns empty + error when map missing (fail-soft)', async (
   });
   assert.deepEqual(res.candidates, []);
   assert.match(res.error, /not found|bulunamad/i);
+  assert.equal(res.mapTotal, 0);
 });
