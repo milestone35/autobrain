@@ -7,6 +7,7 @@
   "scripts": {
     "test": "node --test",
     "scan": "node src/cli.js scan",
-    "status": "node src/cli.js status"
+    "status": "node src/cli.js status",
+    "refresh-map": "node src/cli.js scan && node scripts/bundle-map.js"
   }
 }
