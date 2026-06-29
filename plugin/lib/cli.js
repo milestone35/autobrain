@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadConfig } from './config.js';
 import { loadMap } from './map-loader.js';
@@ -9,6 +10,7 @@ import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { planInstalls, executeInstalls } from './installer.js';
 import { planExecution } from './execution.js';
+import { evaluateChecks } from './optimizations.js';
 
 const pexec = promisify(exec);
 
@@ -247,6 +249,11 @@ function parseApprovedIds(argv) {
   return ai !== -1 && argv[ai + 1] ? new Set(argv[ai + 1].split(',')) : new Set();
 }
 
+function parseRoot(argv) {
+  const i = argv.indexOf('--root');
+  return i !== -1 && argv[i + 1] ? argv[i + 1] : process.cwd();
+}
+
 function formatExecStep(s) {
   return `  [${s.status}] ${s.risk} · ${s.action}: ${s.id}`;
 }
@@ -271,6 +278,32 @@ export async function runExecute({ decisionFile, mapFile, config, approvedIds = 
     lines.push("(Yan-etkili adımlar onay bekliyor — '--approved <id>' ile teyit edin.)");
   }
   return { steps, decision: decision.decision, lines };
+}
+
+// Gather optimization signals for the project at `root`. I/O is injected: `exists(path)`
+// -> boolean, `readJson(path)` -> parsed object or null (missing/broken => null). Fail-soft:
+// any unreadable settings file is simply skipped. No direct fs here, fully testable.
+export async function gatherProjectState({ root, exists, readJson }) {
+  const hasClaudeMd = exists(path.join(root, 'CLAUDE.md')) || exists(path.join(root, 'CLAUDE.local.md'));
+  const settingsFiles = [
+    path.join(root, '.claude', 'settings.json'),
+    path.join(root, '.claude', 'settings.local.json')
+  ];
+  let permissionsAllowCount = 0;
+  let hasHooks = false;
+  for (const f of settingsFiles) {
+    const s = await readJson(f);
+    if (!s) continue;
+    if (Array.isArray(s.permissions?.allow)) permissionsAllowCount += s.permissions.allow.length;
+    if (s.hooks && typeof s.hooks === 'object' && Object.keys(s.hooks).length > 0) hasHooks = true;
+  }
+  return { hasClaudeMd, permissionsAllowCount, hasHooks };
+}
+
+// Gather state then evaluate the checklist. Returns { root, checks }.
+export async function runChecks({ root, exists, readJson }) {
+  const state = await gatherProjectState({ root, exists, readJson });
+  return { root, checks: evaluateChecks(state) };
 }
 
 async function main(argv) {
@@ -319,8 +352,16 @@ async function main(argv) {
   } else if (cmd === 'installed') {
     const res = await runInstalledCount();
     console.log(JSON.stringify(res));
+  } else if (cmd === 'checks') {
+    const root = parseRoot(argv);
+    const res = await runChecks({
+      root,
+      exists: (p) => existsSync(p),
+      readJson: async (p) => { try { return JSON.parse(await readFile(p, 'utf8')); } catch { return null; } }
+    });
+    console.log(JSON.stringify(res));
   } else {
-    console.error('Usage: cli.js <preview|candidates|decide|install|execute|installed> ...');
+    console.error('Usage: cli.js <preview|candidates|decide|install|execute|installed|checks> ...');
     process.exitCode = 1;
   }
 }
