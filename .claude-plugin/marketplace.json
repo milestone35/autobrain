@@ -1,0 +1,12 @@
+{
+  "name": "cc-autopilot",
+  "owner": { "name": "harun.hanbay" },
+  "plugins": [
+    {
+      "name": "cc-autopilot",
+      "source": "./plugin",
+      "description": "Routes each prompt to the best capabilities from the cc-autopilot capability map; a multi-agent council decides, installs trusted capabilities, and executes — with Turkish progress narration. Also /autopilot-tune for project optimization checks.",
+      "version": "0.1.0"
+    }
+  ]
+}
