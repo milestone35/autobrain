@@ -1,6 +1,6 @@
 ---
 name: project-tuner
-description: Check the current project against the cc-autopilot optimization checklist (CLAUDE.md, permission allowlist, hooks) and offer to fix missing items with one approval each. Invoked by the /autopilot-tune command.
+description: Check the current project against the autobrain optimization checklist (CLAUDE.md, permission allowlist, hooks) and offer to fix missing items with one approval each. Invoked by the /autobrain-tune command.
 allowed-tools: Bash, Read, Skill
 ---
 

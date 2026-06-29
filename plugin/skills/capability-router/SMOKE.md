@@ -33,7 +33,7 @@ Expect: decision `install_then_use`; the installer runs `claude plugin install .
 result `installed` (or `failed` with a manual command if the environment blocks it). No approval asked.
 
 ## Scenario E — autoInstall off -> command shown, nothing installed
-Precondition: set `autoInstall: false` in `config/autopilot.config.json`.
+Precondition: set `autoInstall: false` in `config/autobrain.config.json`.
 Command: `/route <request needing an uninstalled trusted plugin>`
 Expect: result `skipped` with the install command printed; nothing is installed. (Restore
 `autoInstall: true` afterward.)

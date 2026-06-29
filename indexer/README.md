@@ -1,7 +1,7 @@
-# cc-autopilot indexer
+# autobrain indexer
 
 Scans local Claude plugin sources and builds `data/capability-map.json` — the
-capability map consumed by the cc-autopilot router plugin.
+capability map consumed by the autobrain router plugin.
 
 ## Requirements
 

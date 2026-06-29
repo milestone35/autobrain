@@ -1,5 +1,5 @@
 ---
-description: Route a request through the cc-autopilot capability council, then carry out the task — read-only steps run automatically, side-effecting steps (incl. shell/ssh) ask for one approval
+description: Route a request through the autobrain capability council, then carry out the task — read-only steps run automatically, side-effecting steps (incl. shell/ssh) ask for one approval
 allowed-tools: Bash, Task, Write, Read, Skill
 ---
 

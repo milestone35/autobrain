@@ -1,4 +1,4 @@
-# cc-autopilot router (plugin)
+# autobrain router (plugin)
 
 Consumes `capability-map.json` (produced by the `indexer/`) and, on every prompt,
 injects a passive hint listing candidate capabilities via a fail-open
@@ -6,7 +6,7 @@ injects a passive hint listing candidate capabilities via a fail-open
 
 ## Requirements
 - Node.js >= 18 (no other dependencies)
-- A capability map at the `mapSource` in `config/autopilot.config.json`. The plugin ships with an
+- A capability map at the `mapSource` in `config/autobrain.config.json`. The plugin ships with an
   embedded `data/capability-map.json` (the default), so it works out of the box; refresh it by
   regenerating with the indexer (`cd ../indexer && npm run scan`) and copying into `plugin/data/`.
 
@@ -28,7 +28,7 @@ In Claude Code (plugin installed):
 - `lib/matcher.js` — deterministic lexical scoring: name×3, keyword×2, description×1.
   Generous gate (`scoreFloor=0`); ranking + `topN` cap limit noise.
 - `lib/map-loader.js` — loads the map, guards `schemaVersion`, computes staleness.
-- `lib/config.js` — `config/autopilot.config.json` with per-field defaults.
+- `lib/config.js` — `config/autobrain.config.json` with per-field defaults.
 - `lib/cli.js` — `runPreview` / `runCandidates` / `runDecide` + path resolution, shared by the
   hook entry and the council.
 - `skills/capability-router/SKILL.md` — the council: gathers candidates, runs Planner + Critic
@@ -38,7 +38,7 @@ In Claude Code (plugin installed):
 - `lib/installer.js` — `planInstalls` (trust → install mode) + `executeInstalls` (dependency-injected
   run/verify/approve). Trusted installs run silently; candidate/unknown require `--approved`.
 
-## Config (`config/autopilot.config.json`)
+## Config (`config/autobrain.config.json`)
 - `enabled` — master switch (false = router silent)
 - `mapSource` — path to capability-map.json (relative to plugin root, or absolute)
 - `topN` — max candidates injected (default 5)

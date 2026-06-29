@@ -1,4 +1,4 @@
-# cc-autopilot
+# autobrain
 
 A Claude Code-native system that, for every prompt, works out the **best way to do the task** —
 which skill, agent, MCP server, slash command, or built-in tool to use — selects it automatically,
@@ -13,17 +13,17 @@ sources (GitHub, npm, the MCP registry, PyPI) into a unified **capability map** 
 
 ## Installation
 
-cc-autopilot is a Claude Code plugin, distributed via this repository's marketplace.
+autobrain is a Claude Code plugin, distributed via this repository's marketplace.
 
 ```bash
 # Add this repo as a plugin marketplace
 /plugin marketplace add milestone35/autobrain
 # Install the plugin
-/plugin install cc-autopilot@cc-autopilot
+/plugin install autobrain@autobrain
 ```
 
 Once installed, each prompt receives passive capability hints. Use `/route <request>` to run the
-multi-agent council + executor, and `/autopilot-tune` to check the current project for optimization
+multi-agent council + executor, and `/autobrain-tune` to check the current project for optimization
 gaps (CLAUDE.md, permission allowlist, hooks).
 
 ---
@@ -66,7 +66,7 @@ See [`indexer/README.md`](indexer/README.md) for source details.
 - **Passive hint (`UserPromptSubmit` hook):** on every prompt, loads the map, runs a deterministic
   lexical matcher, and injects the top candidate capabilities as additional context. Fail-open —
   never blocks a prompt.
-- **Active flow (`/cc-autopilot:route` command + `capability-router` skill):** a multi-agent council
+- **Active flow (`/autobrain:route` command + `capability-router` skill):** a multi-agent council
   (Planner + Critic, ≤ 2 rounds) reaches a validated decision, installs what's needed, then carries
   out the task. Read-only steps run automatically; side-effecting steps (shell/ssh, file writes,
   installs, MCP calls) require a single approval showing the exact command.
@@ -137,9 +137,9 @@ claude --plugin-dir "<repo>/plugin"
 
 Then, inside that session:
 
-- `/plugin list` — confirm `cc-autopilot` is loaded.
+- `/plugin list` — confirm `autobrain` is loaded.
 - Type any request (e.g. *"audit my api security"*) — the passive hook injects candidate hints.
-- `/cc-autopilot:route audit my api security` — run the council: it decides
+- `/autobrain:route audit my api security` — run the council: it decides
   (`use_existing` / `install_then_use` / `no_capability_needed`), installs (trusted silently;
   candidate/unknown with one approval), and executes the task (read-only steps auto;
   side-effecting steps with one approval).
@@ -154,7 +154,7 @@ marketplace commands.
 
 ## Configuration
 
-`plugin/config/autopilot.config.json`:
+`plugin/config/autobrain.config.json`:
 
 | Key | Default | Meaning |
 |-----|---------|---------|

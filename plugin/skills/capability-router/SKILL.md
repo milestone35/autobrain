@@ -1,6 +1,6 @@
 ---
 name: capability-router
-description: Run the cc-autopilot multi-agent capability council to decide which capabilities best serve a request. Invoked by the /route command; gathers matcher candidates, runs a Planner and a Critic subagent (<=2 rounds), and produces one validated decision object. Then installs any required trusted capability (Step 7) and carries out the task (Step 8): read-only steps auto-run, side-effecting steps need one approval.
+description: Run the autobrain multi-agent capability council to decide which capabilities best serve a request. Invoked by the /route command; gathers matcher candidates, runs a Planner and a Critic subagent (<=2 rounds), and produces one validated decision object. Then installs any required trusted capability (Step 7) and carries out the task (Step 8): read-only steps auto-run, side-effecting steps need one approval.
 allowed-tools: Bash, Task, Write, Read, Skill
 ---
 
@@ -26,7 +26,7 @@ Parse `mapTotal` (the full capability-map size) and `candidates.length` from the
 ```bash
 node "$PLUGIN_ROOT/lib/cli.js" installed
 ```
-**Anlat (intro — skill devrede):** `🟢 cc-autopilot devrede — toplam harita: <mapTotal> yetenek, kurulu: <installed.total>.`
+**Anlat (intro — skill devrede):** `🟢 autobrain devrede — toplam harita: <mapTotal> yetenek, kurulu: <installed.total>.`
 **Anlat (adaylar):** `🔎 <candidates.length> aday buldum.`
 If `candidates` is empty: `🔎 Bu istek için uygun aday yok — varsayılan davranışla devam ediyorum.`
 Remember `mapTotal`, `installed.total` and the candidate count — the final summary (Step 8) reuses them.
