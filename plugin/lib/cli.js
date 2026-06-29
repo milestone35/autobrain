@@ -157,8 +157,13 @@ async function probeList(cmd) {
 }
 
 // Count installed capabilities from `claude plugin list` / `claude mcp list` output.
-// Robust to headers/decoration: every installed plugin shows a `name@marketplace` ref;
-// every mcp server shows a `name: ...` line (the empty-state help text => 0).
+// Robust to headers/decoration: every installed plugin shows a `name@marketplace` ref
+// (verified live: `  ❯ name@marketplace` lines); every mcp server shows a `name: ...` line
+// (the empty-state help text => 0).
+// KNOWN GAP (fail-soft, not crashing): the populated `claude mcp list` format could NOT be
+// captured live (the verification machine had 0 mcp servers), so the `name: ` matcher is an
+// assumption — a summary/header line like `Total: 2` would also match and over-count. Verify
+// against a real populated `claude mcp list` and tighten if needed. Tracked as SP10 backlog.
 export function countListed(method, listText) {
   const text = String(listText);
   if (method === 'mcp') {
