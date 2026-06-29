@@ -122,6 +122,30 @@ GitHub marketplace plugins are discovered. The other web sources need no auth.
 
 ---
 
+## Refreshing the published map
+
+The plugin ships with an embedded `plugin/data/capability-map.json`. To publish a fresh map so installed users pick it up:
+
+```bash
+cd indexer
+npm run refresh-map        # scans all sources, then validates + copies into plugin/data/
+cd ..
+git add plugin/data/capability-map.json
+git commit -m "chore: refresh capability map"
+git push origin master
+```
+
+`refresh-map` runs the scan and then `bundle-map.js`, which **validates** the scan output (non-empty, correct schema) before overwriting the embedded map — a broken scan never publishes. Set `GITHUB_TOKEN` first if you want the `github` source included.
+
+**How users get the update:** this plugin has **no pinned `version`**, so Claude Code versions it by git commit SHA — every push is a new version. Users run:
+
+```bash
+/plugin marketplace update autobrain
+/plugin install autobrain@autobrain
+```
+
+---
+
 ## Try it in Claude Code (local, in-place)
 
 The plugin reads the map via a path relative to its own directory, so load it **in place** (the

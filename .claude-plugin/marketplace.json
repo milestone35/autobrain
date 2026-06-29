@@ -5,8 +5,7 @@
     {
       "name": "autobrain",
       "source": "./plugin",
-      "description": "Routes each prompt to the best capabilities from the autobrain capability map; a multi-agent council decides, installs trusted capabilities, and executes — with Turkish progress narration. Also /autobrain-tune for project optimization checks.",
-      "version": "0.1.0"
+      "description": "Routes each prompt to the best capabilities from the autobrain capability map; a multi-agent council decides, installs trusted capabilities, and executes — with Turkish progress narration. Also /autobrain-tune for project optimization checks."
     }
   ]
 }
