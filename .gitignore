@@ -1,0 +1,9 @@
+# OS / shell artifacts
+*.stackdump
+
+# Node
+node_modules/
+
+# Scratch / temp
+*.tmp
+.decision.tmp.json
