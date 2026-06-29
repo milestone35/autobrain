@@ -172,8 +172,12 @@ export function countListed(method, listText) {
 // Fail-soft: an unavailable/failed list command yields 0 for that channel (never throws).
 export async function runInstalledCount({ probe = probeList } = {}) {
   const count = async (method) => {
-    const p = await probe(verifyCmdFor(method));
-    return p && p.ok ? countListed(method, p.text) : 0;
+    try {
+      const p = await probe(verifyCmdFor(method));
+      return p && p.ok ? countListed(method, p.text) : 0;
+    } catch {
+      return 0;
+    }
   };
   const plugins = await count('plugin');
   const mcp = await count('mcp');

@@ -31,3 +31,7 @@ test('runInstalledCount fail-soft: probe failure => 0, no throw', async () => {
   const probe = async () => ({ ok: false, text: '' });
   assert.deepEqual(await runInstalledCount({ probe }), { plugins: 0, mcp: 0, total: 0 });
 });
+test('runInstalledCount fail-soft: throwing probe => 0, no throw', async () => {
+  const probe = async () => { throw new Error('unavailable'); };
+  assert.deepEqual(await runInstalledCount({ probe }), { plugins: 0, mcp: 0, total: 0 });
+});
