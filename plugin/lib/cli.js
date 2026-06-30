@@ -37,11 +37,11 @@ export async function runPreview({ prompt, mapFile, config, now }) {
     return { candidates: [], lines: [`[autobrain] harita yüklenemedi: ${error}`] };
   }
   const promptTokens = tokenize(prompt);
-  const { candidates } = matchPrompt(prompt, map, { topN: config.topN, scoreFloor: config.scoreFloor });
+  const { candidates, wantsVisual } = matchPrompt(prompt, map, { topN: config.topN, scoreFloor: config.scoreFloor });
   const lines = [
     `[autobrain] preview — ${candidates.length} aday (harita: ${map.capabilities.length}${stale ? `, ${ageDays}g eski` : ''})`,
     ...candidates.flatMap((c) => {
-      const head = `  [score ${scoreCapability(promptTokens, c)}] ${c.id}  (${c.kind}·${c.trust}) — ${c.name}`;
+      const head = `  [score ${scoreCapability(promptTokens, c, { wantsVisual })}] ${c.id}  (${c.kind}·${c.trust}) — ${c.name}`;
       return c.install?.command ? [head, `      kur: ${c.install.command}`] : [head];
     })
   ];
@@ -52,12 +52,12 @@ export async function runCandidates({ prompt, mapFile, config, now }) {
   const { map, error } = await loadMap({ mapFile, staleDays: config.staleDays, now });
   if (error || !map) return { candidates: [], mapTotal: 0, error: error || 'harita yok' };
   const promptTokens = tokenize(prompt);
-  const { candidates } = matchPrompt(prompt, map, { topN: config.topN, scoreFloor: config.scoreFloor });
+  const { candidates, wantsVisual } = matchPrompt(prompt, map, { topN: config.topN, scoreFloor: config.scoreFloor });
   return {
     mapTotal: map.capabilities.length,
     candidates: candidates.map((c) => ({
       id: c.id, kind: c.kind, name: c.name, trust: c.trust,
-      install: c.install?.command ?? null, score: scoreCapability(promptTokens, c)
+      install: c.install?.command ?? null, score: scoreCapability(promptTokens, c, { wantsVisual })
     }))
   };
 }

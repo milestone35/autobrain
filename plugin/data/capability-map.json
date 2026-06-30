@@ -57497,6 +57497,38 @@
         "stars": null
       },
       "lastSeen": "2026-06-26T08:32:06.676Z"
+    },
+    {
+      "id": "builtin::core::skill::artifact-design",
+      "kind": "skill",
+      "name": "artifact-design",
+      "description": "Design guidance and fundamentals for producing polished, well-designed HTML pages, reports and visual documents.",
+      "keywords": [
+        "design",
+        "html",
+        "report",
+        "artifact",
+        "page",
+        "visual",
+        "layout",
+        "css",
+        "ui",
+        "polished",
+        "document"
+      ],
+      "source": {
+        "marketplace": "builtin",
+        "repo": null,
+        "discoveredVia": "builtin"
+      },
+      "install": null,
+      "trust": "builtin",
+      "cost": null,
+      "popularity": {
+        "unique_installs": null,
+        "stars": null
+      },
+      "lastSeen": "2026-06-26T08:32:06.676Z"
     }
   ]
 }

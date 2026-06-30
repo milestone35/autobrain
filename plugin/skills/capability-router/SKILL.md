@@ -38,12 +38,15 @@ Rules for the Planner:
 - Choose ONLY from the provided candidate ids. Never invent ids.
 - Prefer the smallest, cheapest set that does the job; prefer already-suitable over installing more.
 - `confidence` in [0,1] reflects how sure it is a listed capability genuinely helps.
-- A candidate whose `trust` is `builtin` (kind `bang`/`builtin-tool`/`slash`/`builtin-agent`) is ALREADY available — it needs no install. Prefer such a candidate when it suffices, and never list it under `installs`. (E.g. for a quick search, prefer the builtin `Grep` over installing a search plugin.)
+- A candidate whose `trust` is `builtin` (kind `bang`/`builtin-tool`/`slash`/`builtin-agent`/`skill`) is ALREADY available — it needs no install. Prefer such a candidate when it suffices, and never list it under `installs`. (E.g. for a quick search, prefer the builtin `Grep` over installing a search plugin.)
+- **Decompose composite requests.** First break the REQUEST into its sub-tasks (e.g. "analyze X" + "deliver it as an HTML report"). Evaluate each sub-task on its own — do NOT collapse the whole request onto its single dominant sub-task and dismiss capabilities that serve a secondary one. A request can warrant a MIXED plan: builtin tools for the core work PLUS a capability for the deliverable.
+- **Deliverable-format rule.** If the deliverable is a user-facing **visual/presentation artifact** (HTML report/page, UI, slide deck, diagram, landing page, dashboard) AND a design capability (e.g. `artifact-design`, `frontend-design`) is among the candidates, INCLUDE it in `capabilities`. For a visual deliverable, design quality is part of *doing the job* — it is NOT gold-plating, so the "smallest/cheapest set" rule must not strip it. Prefer a zero-install design capability (`trust: builtin`, e.g. `artifact-design`) over one that needs installing when it suffices. This rule does NOT fire for plain code, markdown, JSON, or CLI output — only for visual/presentation deliverables.
 
 ## Step 3 — Critic subagent (Task tool)
 Dispatch ONE subagent (general-purpose). Give it: the REQUEST, the candidate JSON, and the Planner's proposal. Instruct it to attack the proposal and return strict JSON:
 `{ "verdict": "accept" | "revise" | "reject", "objections": ["..."], "suggested": { "capabilities": [...], "installs": [...] }, "confidence": 0.0 }`
 The Critic asks: is a special capability genuinely needed, or does default behavior suffice? Is there a cheaper / already-installed option? Is the trust/risk acceptable? Is the token cost justified?
+Counter-balance (do NOT veto reflexively): if the deliverable is a user-facing **visual/presentation artifact** (HTML report/page, UI, slide, diagram, landing, dashboard), plain builtin `Write` does NOT meet the design bar — when a design capability (e.g. `artifact-design`, `frontend-design`) is among the candidates, its inclusion is justified and should be accepted (token cost is warranted here). Also check the converse: did the Planner collapse a composite request onto one sub-task and miss a capability the deliverable needs?
 
 ## Step 4 — Converge (<=2 rounds)
 - If the Critic's verdict is `accept`, proceed.

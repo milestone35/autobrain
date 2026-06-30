@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tokenize, scoreCapability, rankCandidates, matchPrompt } from '../lib/matcher.js';
+import { tokenize, scoreCapability, rankCandidates, matchPrompt, deliverableIsVisual, isDesignOriented } from '../lib/matcher.js';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -90,4 +90,50 @@ test('rankCandidates: isBuiltin via source.discoveredVia also gets tie-break pre
   ];
   // builtin recognized via source.discoveredVia (not the trust field) still wins the tie
   assert.deepEqual(rankCandidates(scored, 5).map((c) => c.id), ['builtin-via-source', 'plugin-cap']);
+});
+
+// --- Design-awareness heuristic (SP17) --------------------------------------
+
+test('deliverableIsVisual detects visual/presentation deliverable signals', () => {
+  assert.equal(deliverableIsVisual('export this to an html report'), true);
+  assert.equal(deliverableIsVisual('bunu bir html rapora aktar'), true);
+  assert.equal(deliverableIsVisual('design a landing page'), true);
+  assert.equal(deliverableIsVisual('build a ui dashboard'), true);
+  assert.equal(deliverableIsVisual('şık bir tasarım istiyorum'), true);
+});
+
+test('deliverableIsVisual is false for plain code/text tasks (no substring false-positives)', () => {
+  assert.equal(deliverableIsVisual('write a function to parse json'), false);
+  assert.equal(deliverableIsVisual('fix the failing build script'), false);   // must NOT match 'ui' inside 'build'
+  assert.equal(deliverableIsVisual('refactor the require() calls'), false);    // must NOT match 'ui' inside 'require'
+  assert.equal(deliverableIsVisual(''), false);
+});
+
+test('isDesignOriented flags design/frontend/ui capabilities, not generic ones', () => {
+  assert.equal(isDesignOriented({ name: 'frontend-design', keywords: ['frontend', 'design'], description: 'polished interfaces' }), true);
+  assert.equal(isDesignOriented({ name: 'artifact-design', keywords: ['artifact', 'html'], description: 'design fundamentals' }), true);
+  assert.equal(isDesignOriented({ name: 'api-audit', keywords: ['api', 'security'], description: 'audit apis' }), false);
+});
+
+test('scoreCapability adds design bonus only when wantsVisual AND cap is design-oriented', () => {
+  const t = tokenize('html report');
+  const designCap = { name: 'frontend-design', keywords: ['frontend', 'design'], description: 'polished ui' };
+  const plainCap = { name: 'api-audit', keywords: ['api'], description: 'audit' };
+  const base = scoreCapability(t, designCap);
+  assert.equal(scoreCapability(t, designCap, { wantsVisual: true }), base + 4); // bonus applied
+  assert.equal(scoreCapability(t, designCap, { wantsVisual: false }), base);    // no signal -> no bonus
+  assert.equal(scoreCapability(t, designCap), base);                            // back-compat: opts optional
+  // a non-design cap never gets the bonus even when a visual deliverable is wanted
+  assert.equal(scoreCapability(t, plainCap, { wantsVisual: true }), scoreCapability(t, plainCap));
+});
+
+test('matchPrompt surfaces a design capability for a visual deliverable via the bonus', () => {
+  const map = { capabilities: [
+    { id: 'design', name: 'frontend-design', keywords: ['frontend', 'design'], description: 'polished interfaces', trust: 'trusted', popularity: {} },
+    { id: 'plain', name: 'json-tool', keywords: ['json'], description: 'parse json', trust: 'trusted', popularity: {} }
+  ] };
+  // 'export to an html report' shares no tokens with the design cap -> base score 0 (excluded
+  // at scoreFloor 0). The visual-deliverable bonus must pull it above the floor.
+  const { candidates } = matchPrompt('export to an html report', map, { topN: 5, scoreFloor: 0 });
+  assert.ok(candidates.some((c) => c.id === 'design'), 'design cap should surface via bonus');
 });

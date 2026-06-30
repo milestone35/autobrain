@@ -17,8 +17,18 @@ test('collect emits builtin capabilities with install:null and builtin source', 
     assert.equal(c.source.discoveredVia, 'builtin');
     assert.equal(c.source.marketplace, 'builtin');
     assert.equal(c.lastSeen, NOW);
-    assert.ok(['bang', 'builtin-tool', 'slash', 'builtin-agent'].includes(c.kind));
+    assert.ok(['bang', 'builtin-tool', 'slash', 'builtin-agent', 'skill'].includes(c.kind));
   }
+});
+
+test('collect includes the artifact-design builtin skill (zero-install design capability)', async () => {
+  const res = await builtin.collect({ sourcePaths: {}, now: NOW });
+  const ad = res.capabilities.find((c) => c.id === 'builtin::core::skill::artifact-design');
+  assert.ok(ad, 'artifact-design present');
+  assert.equal(ad.kind, 'skill');
+  assert.equal(ad.install, null);
+  assert.equal(ad.source.discoveredVia, 'builtin');
+  assert.ok(ad.keywords.includes('design') && ad.keywords.includes('html'));
 });
 
 test('collect includes the bang shell capability with ssh keyword', async () => {

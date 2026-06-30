@@ -27,7 +27,14 @@ const BUILTINS = [
   { kind: 'builtin-agent', name: 'Explore', description: 'Read-only search agent for broad fan-out searches across many files.', keywords: ['explore', 'search', 'find', 'agent', 'codebase', 'discover'] },
   { kind: 'builtin-agent', name: 'Plan', description: 'Software architect agent for designing implementation plans.', keywords: ['plan', 'architect', 'design', 'agent', 'strategy'] },
   { kind: 'builtin-agent', name: 'general-purpose', description: 'General-purpose agent for complex research and multi-step tasks.', keywords: ['general', 'agent', 'research', 'task', 'multi', 'step'] },
-  { kind: 'builtin-agent', name: 'code-reviewer', description: 'Agent that reviews completed work against the plan and coding standards.', keywords: ['code', 'reviewer', 'agent', 'review', 'standards', 'quality'] }
+  { kind: 'builtin-agent', name: 'code-reviewer', description: 'Agent that reviews completed work against the plan and coding standards.', keywords: ['code', 'reviewer', 'agent', 'review', 'standards', 'quality'] },
+
+  // Zero-install design capability for visual/presentation deliverables (HTML reports,
+  // pages, polished documents). Lets the council route a visual deliverable to a design
+  // skill without an install — preferred over installing frontend-design when it suffices.
+  { kind: 'skill', name: 'artifact-design',
+    description: 'Design guidance and fundamentals for producing polished, well-designed HTML pages, reports and visual documents.',
+    keywords: ['design', 'html', 'report', 'artifact', 'page', 'visual', 'layout', 'css', 'ui', 'polished', 'document'] }
 ];
 
 export async function collect(ctx) {

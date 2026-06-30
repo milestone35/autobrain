@@ -1,7 +1,7 @@
 {
   "enabled": true,
   "mapSource": "./data/capability-map.json",
-  "topN": 5,
+  "topN": 10,
   "scoreFloor": 0,
   "staleDays": 14,
   "confidenceThreshold": 0.6,

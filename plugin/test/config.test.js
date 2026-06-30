@@ -28,6 +28,11 @@ test('loadConfig accepts scoreFloor 0 and positive topN', () => {
   assert.equal(c.topN, 1);
 });
 
+test('loadConfig defaults topN to 10 (SP17: more room for design candidates)', () => {
+  assert.equal(loadConfig().topN, 10);
+  assert.equal(DEFAULTS.topN, 10);
+});
+
 test('loadConfig defaults confidenceThreshold to 0.6', () => {
   assert.equal(loadConfig().confidenceThreshold, 0.6);
   assert.equal(DEFAULTS.confidenceThreshold, 0.6);
