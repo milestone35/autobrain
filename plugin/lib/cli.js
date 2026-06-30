@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadConfig } from './config.js';
@@ -57,7 +57,12 @@ export async function runCandidates({ prompt, mapFile, config, now }) {
     mapTotal: map.capabilities.length,
     candidates: candidates.map((c) => ({
       id: c.id, kind: c.kind, name: c.name, trust: c.trust,
-      install: c.install?.command ?? null, score: scoreCapability(promptTokens, c, { wantsVisual })
+      install: c.install?.command ?? null, score: scoreCapability(promptTokens, c, { wantsVisual }),
+      // SP18 — display detail for the user-selection table.
+      description: c.description ?? '',
+      marketplace: c.source?.marketplace ?? null,
+      repo: c.source?.repo ?? null,
+      discoveredVia: c.source?.discoveredVia ?? null
     }))
   };
 }
@@ -85,6 +90,48 @@ export async function runDecide({ decisionFile, mapFile, config, now }) {
     decision.method ? `  yöntem: ${decision.method}` : '  yöntem: -',
     `  gerekçe: ${decision.rationale || '-'}`,
     '(install_then_use ise kurulum, güven sınırına göre yapılır: trusted sessiz, untrusted tek onayla.)'
+  ];
+  return { decision, lines };
+}
+
+// SP18 — rebuild the decision from the user's explicit capability selection (Step 6.5).
+// The user's choice is authoritative, so confidence is forced to 1.0 (the council's
+// confidence gate must not strip an explicit pick). installs = chosen ids that carry an
+// install command (builtin caps have install:null -> excluded); the deterministic
+// install/execute steps then handle them as usual. The result overwrites decisionFile.
+export async function runSelect({ decisionFile, chosenIds, mapFile, config, now }) {
+  const { map } = await loadMap({ mapFile, staleDays: config.staleDays, now });
+  if (!map) {
+    return { decision: normalizeDecision({ confidence: 0 }, {}), lines: ['[autobrain] seçim: harita okunamadı'] };
+  }
+  const knownIds = new Set(map.capabilities.map((c) => c.id));
+  const byId = new Map(map.capabilities.map((c) => [c.id, c]));
+
+  // Preserve the original method/rationale for continuity; ignore an unreadable file.
+  let prev = {};
+  try { prev = JSON.parse(await readFile(decisionFile, 'utf8')); } catch { prev = {}; }
+
+  const chosen = [...new Set((Array.isArray(chosenIds) ? chosenIds : []).filter((id) => knownIds.has(id)))];
+  const installs = chosen.filter((id) => byId.get(id)?.install?.command);
+  const decisionType = chosen.length === 0
+    ? 'no_capability_needed'
+    : (installs.length ? 'install_then_use' : 'use_existing');
+
+  const raw = {
+    decision: decisionType,
+    capabilities: chosen,
+    installs,
+    method: typeof prev.method === 'string' ? prev.method : '',
+    rationale: 'kullanıcı seçimi',
+    confidence: 1
+  };
+  const decision = normalizeDecision(raw, { confidenceThreshold: config.confidenceThreshold, knownIds });
+  await writeFile(decisionFile, `${JSON.stringify(decision, null, 2)}\n`, 'utf8');
+
+  const lines = [
+    `[autobrain] kullanıcı seçimi: ${decision.decision}`,
+    decision.capabilities.length ? `  yetenekler: ${decision.capabilities.join(', ')}` : '  yetenekler: -',
+    decision.installs.length ? `  kurulacak:  ${decision.installs.join(', ')}` : '  kurulacak:  -'
   ];
   return { decision, lines };
 }
@@ -249,6 +296,11 @@ function parseApprovedIds(argv) {
   return ai !== -1 && argv[ai + 1] ? new Set(argv[ai + 1].split(',')) : new Set();
 }
 
+function parseChosenIds(argv) {
+  const ci = argv.indexOf('--chosen');
+  return ci !== -1 && argv[ci + 1] ? argv[ci + 1].split(',').map((s) => s.trim()).filter(Boolean) : [];
+}
+
 function parseRoot(argv) {
   const i = argv.indexOf('--root');
   return i !== -1 && argv[i + 1] ? argv[i + 1] : process.cwd();
@@ -350,6 +402,17 @@ async function main(argv) {
     const { steps, decision, lines } = await runExecute({ decisionFile, mapFile, config, approvedIds, now });
     console.log(lines.join('\n'));
     console.log(`\n${JSON.stringify({ decision, steps })}`);
+  } else if (cmd === 'select') {
+    const decisionFile = argv[3];
+    if (!decisionFile || decisionFile.startsWith('--')) {
+      console.error('Usage: cli.js select <decisionFile> --chosen id1,id2');
+      process.exitCode = 1;
+      return;
+    }
+    const chosenIds = parseChosenIds(argv);
+    const { decision, lines } = await runSelect({ decisionFile, chosenIds, mapFile, config, now });
+    console.log(lines.join('\n'));
+    console.log(`\n${JSON.stringify(decision)}`);
   } else if (cmd === 'installed') {
     const res = await runInstalledCount();
     console.log(JSON.stringify(res));
@@ -362,7 +425,7 @@ async function main(argv) {
     });
     console.log(JSON.stringify(res));
   } else {
-    console.error('Usage: cli.js <preview|candidates|decide|install|execute|installed|checks> ...');
+    console.error('Usage: cli.js <preview|candidates|decide|select|install|execute|installed|checks> ...');
     process.exitCode = 1;
   }
 }

@@ -29,7 +29,7 @@ node "$PLUGIN_ROOT/lib/cli.js" installed
 **Anlat (intro — skill devrede):** `🟢 autobrain devrede — toplam harita: <mapTotal> yetenek, kurulu: <installed.total>.`
 **Anlat (adaylar):** `🔎 <candidates.length> aday buldum.`
 If `candidates` is empty: `🔎 Bu istek için uygun aday yok — varsayılan davranışla devam ediyorum.`
-Remember `mapTotal`, `installed.total` and the candidate count — the final summary (Step 8) reuses them.
+Remember `mapTotal`, `installed.total`, the candidate count AND the full candidate objects (with `description`/`marketplace`/`install`/…) — Step 6.5 renders them as the user-selection table and the final summary (Step 8) reuses the counts.
 
 ## Step 2 — Planner subagent (Task tool)
 Dispatch ONE subagent (general-purpose). Give it ONLY: the REQUEST and the JSON candidate list. Instruct it to return strict JSON:
@@ -74,6 +74,43 @@ This normalizes the decision: it enforces the confidence threshold (low confiden
 
 **Anlat:** `🧠 Konsey kararı: <decision> — yetenek(ler): <id'ler> (gerekçe: <kısa>).`
 For `no_capability_needed`: `🧠 Özel yetenek gerekmiyor — varsayılan davranışla devam ediyorum.`
+
+## Step 6.5 — Candidate table & user selection (interactive gate)
+The council's pick is a RECOMMENDATION, not the final word — the user decides what actually runs.
+
+If the Step 1 `candidates` list is EMPTY, skip this step entirely (nothing to choose). Otherwise:
+
+1. Render ALL candidates (from Step 1, which now carry `description`, `marketplace`, `repo`, `discoveredVia`)
+   as a Markdown table. Pre-check the ones the council chose: mark `✓` when the candidate's `id` is in the
+   FINAL decision's `capabilities` (from Step 6), else leave blank. Columns:
+
+   | # | ✓ | Ad | Tür | Güven | Kaynak / Market | Kurulum | Açıklama |
+   |---|---|----|-----|-------|-----------------|---------|----------|
+
+   - **Tür** = `kind`; **Güven** = `trust` (builtin/trusted/candidate/unknown); **Kaynak / Market** =
+     `marketplace` (+ `discoveredVia`, e.g. `builtin`/`official`); **Kurulum** = the `install` command, or
+     `— (kurulu/builtin)` when `install` is null; **Açıklama** = `description`, truncated to ~100 chars.
+   - Number the rows (`#`) so the user can refer to them.
+
+2. Ask the user, in Turkish, which capabilities to use for this task. State the default explicitly:
+   **Anlat:** `📋 Aday tablosu yukarıda. Model seçimi (✓): <id'ler veya 'yok'>. Onaylamak için "onayla" yaz; değiştirmek için kullanmak istediğin satır numaralarını/adlarını yaz (hiçbiri için "hiçbiri").`
+
+3. Map the user's free-text reply to candidate ids:
+   - `"onayla"`/empty → the council's pre-checked set (the decision's `capabilities`).
+   - row numbers / names → the matching candidate ids.
+   - `"hiçbiri"` → empty selection.
+   If the reply is ambiguous, ask ONCE more; if still unclear, fall back to the council's set (fail-soft).
+
+4. Rebuild the decision from the user's selection (deterministic — do NOT hand-edit the file):
+   ```bash
+   node "$PLUGIN_ROOT/lib/cli.js" select "$PLUGIN_ROOT/.decision.tmp.json" --chosen <comma,separated,ids>
+   ```
+   (Omit `--chosen` for an empty selection.) The user's choice is authoritative: the command sets
+   `capabilities` to exactly the chosen ids, derives `decision` (`use_existing` / `install_then_use` /
+   `no_capability_needed`), puts only installable ids (non-builtin) in `installs`, and forces `confidence: 1`.
+   Parse the **last non-empty line** as the new canonical decision. Steps 7 and 8 operate on THIS updated file.
+
+**Anlat (seçimden sonra):** `✅ Seçilen: <id'ler veya 'yok'> — bununla devam ediyorum.`
 
 ## Step 7 — Present and (if needed) install
 Report the final decision in Turkish: the `decision`, chosen `capabilities`, `method`, and `rationale`.

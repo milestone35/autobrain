@@ -22,6 +22,11 @@ test('runCandidates returns structured machine-readable candidates', async () =>
   assert.equal(top.trust, 'trusted');
   assert.equal(top.install, 'claude plugin install api-sec@mp');
   assert.equal(typeof top.score, 'number');
+  // SP18: candidates carry display detail for the user-selection table.
+  assert.equal(typeof top.description, 'string');
+  assert.ok(top.description.length > 0, 'description present');
+  assert.equal(top.marketplace, 'mp');
+  assert.equal(typeof top.discoveredVia, 'string');
   // mapTotal = tam harita boyutu (aday sayısı DEĞİL): fixture 3 cap, eşleşen 2
   assert.equal(res.mapTotal, 3);
   assert.equal(res.candidates.length, 2);
