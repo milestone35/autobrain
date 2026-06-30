@@ -5,6 +5,5 @@
   "license": "MIT",
   "homepage": "https://github.com/milestone35/autobrain",
   "repository": "https://github.com/milestone35/autobrain",
-  "keywords": ["claude-code", "plugin", "capability-router", "automation", "mcp", "router"],
-  "hooks": "./hooks/hooks.json"
+  "keywords": ["claude-code", "plugin", "capability-router", "automation", "mcp", "router"]
 }
